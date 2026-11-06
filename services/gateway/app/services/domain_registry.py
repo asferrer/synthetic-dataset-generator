@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from datetime import datetime
-import shutil
 
 logger = logging.getLogger(__name__)
 

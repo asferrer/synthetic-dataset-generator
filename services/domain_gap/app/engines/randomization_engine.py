@@ -10,7 +10,6 @@ Optionally matches histogram statistics from real reference images.
 """
 
 import os
-import json
 import shutil
 import random
 from pathlib import Path

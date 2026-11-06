@@ -7,7 +7,6 @@ Pydantic models for object extraction and SAM3 tool endpoints.
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional, Any
 from enum import Enum
-from datetime import datetime
 
 
 class AnnotationType(str, Enum):

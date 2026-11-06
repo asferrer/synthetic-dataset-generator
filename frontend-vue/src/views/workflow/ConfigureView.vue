@@ -12,25 +12,26 @@ const router = useRouter()
 const { t } = useI18n()
 
 const activeTab = ref('effects')
+const effectsTabRef = ref<InstanceType<typeof EffectsTab> | null>(null)
 
 const tabs = [
   { id: 'effects', label: t('workflow.configure.tabs.effects'), icon: Settings },
   { id: 'sizes', label: t('workflow.configure.tabs.objectSizes'), icon: Ruler },
 ]
 
-function onEffectsNext() {
-  router.push('/prepare?tab=sources')
-}
-
-function onEffectsBack() {
-  router.push('/prepare')
-}
-
 function goBack() {
   router.push('/prepare')
 }
 
+// Effects/placement config lives as a local copy inside EffectsTab until its
+// save() persists it to the store, so the Continue button must trigger it
+// before navigating (the Object Sizes tab auto-saves each field, no save needed there).
 function goNext() {
+  if (activeTab.value === 'effects') {
+    if (effectsTabRef.value?.hasValidationErrors) return
+    effectsTabRef.value?.save()
+    return
+  }
   router.push('/generate')
 }
 </script>
@@ -44,7 +45,7 @@ function goNext() {
 
     <TabContainer v-model="activeTab" :tabs="tabs">
       <template #effects>
-        <EffectsTab @navigate-next="goNext" @navigate-back="goBack" />
+        <EffectsTab ref="effectsTabRef" @navigate-next="() => router.push('/generate')" @navigate-back="goBack" />
       </template>
       <template #sizes>
         <ObjectSizesTab />

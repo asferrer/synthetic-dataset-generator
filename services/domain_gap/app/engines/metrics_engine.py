@@ -8,7 +8,6 @@ and LAB color space analysis.
 """
 
 import math
-import os
 import time
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple

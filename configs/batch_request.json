@@ -1,0 +1,64 @@
+{
+  "backgrounds_dir": "/app/datasets/Backgrounds_filtered",
+  "objects_dir": "/app/datasets/Extracted_objects_train",
+  "output_dir": "/app/output/synthetic_batch",
+  "num_images": 12000,
+  "targets_per_class": {
+    "Bottle": 1500,
+    "Can": 4500,
+    "Fishing_Net": 2500,
+    "Glove": 2500,
+    "Mask": 1500,
+    "Metal_Debris": 4500,
+    "Plastic_Debris": 1500,
+    "Tire": 1500
+  },
+  "max_objects_per_image": 8,
+  "effects": [
+    "color_correction",
+    "blur_matching",
+    "underwater",
+    "caustics",
+    "shadows",
+    "edge_smoothing"
+  ],
+  "effects_config": {
+    "color_intensity": 0.25,
+    "blur_strength": 0.65,
+    "underwater_intensity": 0.33,
+    "caustics_intensity": 0.12,
+    "shadow_opacity": 0.12,
+    "shadow_blur": 28,
+    "edge_feather": 12,
+    "water_color": [
+      180,
+      120,
+      30
+    ],
+    "water_clarity": "clear",
+    "underwater_physical": false,
+    "caustics_depth_aware": false,
+    "depth_occlusion": false,
+    "validate_identity": false,
+    "use_binary_alpha": true,
+    "alpha_feather_radius": 2,
+    "max_blur_budget": 10.0,
+    "recalculate_bbox_after_global": true
+  },
+  "depth_aware": true,
+  "semantic_placement": true,
+  "seed": 21,
+  "validate_quality": true,
+  "validate_physics": true,
+  "reject_invalid": true,
+  "save_pipeline_debug": false,
+  "parallel": true,
+  "concurrent_limit": 2,
+  "vram_threshold": 0.7,
+  "dataset_info": {
+    "name": "Synthetic marine debris batch",
+    "description": "Copy-paste batch built from training-split crops and backgrounds only",
+    "version": "11.0",
+    "contributor": "Alejandro Sanchez Ferrer"
+  }
+}

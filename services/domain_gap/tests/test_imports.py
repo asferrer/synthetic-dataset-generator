@@ -35,7 +35,6 @@ def test_schemas_import():
         RandomizationBatchRequest,
         RandomizationResponse,
         StyleTransferConfig,
-        CycleGANTrainConfig,
         HealthResponse,
         InfoResponse,
         JobStatusResponse,

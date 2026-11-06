@@ -165,7 +165,6 @@ async def health_check():
 
     Returns aggregated health status of the gateway and all downstream services.
     """
-    import time
 
     try:
         registry = get_service_registry()
@@ -201,14 +200,13 @@ async def health_check():
             ))
 
         # Determine overall status
-        # Healthy if depth, effects, and augmentor are up (segmentation is optional)
+        # Healthy if depth and augmentor are up (segmentation is optional)
         depth_ok = any(s.name == "depth" and s.status == ServiceStatus.HEALTHY for s in services)
-        effects_ok = any(s.name == "effects" and s.status == ServiceStatus.HEALTHY for s in services)
         augmentor_ok = any(s.name == "augmentor" and s.status == ServiceStatus.HEALTHY for s in services)
 
-        if depth_ok and effects_ok and augmentor_ok:
+        if depth_ok and augmentor_ok:
             overall_status = ServiceStatus.HEALTHY
-        elif (depth_ok and effects_ok) or (depth_ok and augmentor_ok) or (effects_ok and augmentor_ok):
+        elif depth_ok or augmentor_ok:
             overall_status = ServiceStatus.DEGRADED
         else:
             overall_status = ServiceStatus.UNHEALTHY
@@ -240,7 +238,7 @@ async def health_check():
 async def service_info():
     """Get gateway service information."""
     return InfoResponse(
-        available_services=["depth", "effects", "segmentation", "augmentor", "domain_gap"],
+        available_services=["depth", "segmentation", "augmentor", "domain_gap"],
         endpoints=[
             "/health",
             "/info",
@@ -256,7 +254,6 @@ async def service_info():
             "/domains/{domain_id}/activate",
             "/domains/active",
             "/services/depth",
-            "/services/effects",
             "/services/augmentor"
         ]
     )
@@ -269,8 +266,7 @@ async def generate_image(request: GenerateImageRequest):
     Orchestrates the pipeline:
     1. Depth estimation (if enabled)
     2. Object placement
-    3. Effects application
-    4. Annotation generation
+    3. Annotation generation
     """
     logger.info(f"Generate image request: {request.background_path}")
 
@@ -362,29 +358,6 @@ async def depth_service_info():
         logger.error(f"Failed to get depth service info: {e}")
         return {
             "service": "depth",
-            "error": str(e),
-            "health": {"healthy": False}
-        }
-
-
-@app.get("/services/effects")
-async def effects_service_info():
-    """Get effects service information and health."""
-    try:
-        registry = get_service_registry()
-        info = await registry.effects.get("/info")
-        health = await registry.effects.health_check()
-
-        return {
-            "service": "effects",
-            "url": registry.effects.base_url,
-            "info": info,
-            "health": health
-        }
-    except Exception as e:
-        logger.error(f"Failed to get effects service info: {e}")
-        return {
-            "service": "effects",
             "error": str(e),
             "health": {"healthy": False}
         }
@@ -494,7 +467,6 @@ async def root():
             "augment_lighting": "/augment/lighting",
             "config_object_sizes": "/config/object-sizes",
             "depth_service": "/services/depth",
-            "effects_service": "/services/effects",
             "augmentor_service": "/services/augmentor"
         },
         "documentation": "/docs"

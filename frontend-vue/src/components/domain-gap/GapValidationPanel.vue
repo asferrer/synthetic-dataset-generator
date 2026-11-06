@@ -299,13 +299,13 @@ onMounted(async () => {
         >
           <component :is="gapIcon" class="h-4 w-4 flex-shrink-0" />
           <span v-if="gapScoreVariant === 'success'">
-            Domain gap is low. Your synthetic data should work well for training.
+            {{ t('tools.domainGap.validation.recommendation.low') }}
           </span>
           <span v-else-if="gapScoreVariant === 'warning'">
-            Moderate domain gap detected. Consider applying suggestions to improve quality.
+            {{ t('tools.domainGap.validation.recommendation.medium') }}
           </span>
           <span v-else>
-            High domain gap detected. It is recommended to adjust parameters and regenerate before proceeding.
+            {{ t('tools.domainGap.validation.recommendation.high') }}
           </span>
         </div>
       </div>

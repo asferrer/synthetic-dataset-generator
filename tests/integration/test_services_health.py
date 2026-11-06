@@ -25,11 +25,6 @@ SERVICES_CONFIG = {
         "startup_timeout": 240,  # Largest model
         "name": "Segmentation"
     },
-    "effects": {
-        "url": "http://localhost:8003/health",
-        "startup_timeout": 30,
-        "name": "Effects"
-    },
     "augmentor": {
         "url": "http://localhost:8004/health",
         "startup_timeout": 60,
@@ -95,12 +90,6 @@ class TestServicesHealth:
         data = response.json()
         assert "service" in data and data["service"] == "depth"
 
-        # Check effects service via gateway
-        response = requests.get(f"{gateway_url}/services/effects", timeout=30)
-        assert response.status_code == 200
-        data = response.json()
-        assert "service" in data and data["service"] == "effects"
-
         # Check augmentor service via gateway
         response = requests.get(f"{gateway_url}/services/augmentor", timeout=30)
         assert response.status_code == 200
@@ -133,9 +122,9 @@ class TestServicesHealth:
 
         compose_file = Path(__file__).parent.parent.parent / "docker-compose.microservices.yml"
 
-        # Restart effects service (quick to restart)
+        # Restart the augmentor (quick to restart)
         subprocess.run(
-            ["docker", "compose", "-f", str(compose_file), "restart", "effects"],
+            ["docker", "compose", "-f", str(compose_file), "restart", "augmentor"],
             capture_output=True,
             timeout=60
         )
@@ -144,11 +133,11 @@ class TestServicesHealth:
         max_retries = 20
         for _ in range(max_retries):
             try:
-                response = requests.get("http://localhost:8003/health", timeout=5)
+                response = requests.get("http://localhost:8004/health", timeout=5)
                 if response.status_code == 200:
                     return
             except requests.exceptions.RequestException:
                 pass
             time.sleep(2)
 
-        pytest.fail("Effects service did not recover after restart")
+        pytest.fail("Augmentor service did not recover after restart")

@@ -170,7 +170,7 @@ async function runBalancing() {
     uiStore.showSuccess('Balancing Complete', balanceResult.value.message)
   } catch (e: any) {
     error.value = e.message || 'Balancing failed'
-    uiStore.showError('Balancing Failed', error.value)
+    uiStore.showError('Balancing Failed', error.value ?? undefined)
   } finally {
     balancing.value = false
   }

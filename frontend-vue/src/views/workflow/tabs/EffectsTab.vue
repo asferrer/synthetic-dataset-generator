@@ -4,6 +4,7 @@ import { useWorkflowStore } from '@/stores/workflow'
 import { useUiStore } from '@/stores/ui'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import EffectsPreviewPanel from '@/components/workflow/EffectsPreviewPanel.vue'
 import {
   Switch,
   SwitchGroup,
@@ -63,18 +64,19 @@ const { t } = useI18n()
 
 interface EffectsPreset {
   id: string
-  name: string
+  nameKey?: string
+  descriptionKey?: string
+  name?: string
   icon: any
-  description: string
   config: Partial<EffectsConfig>
 }
 
 const builtInPresets: EffectsPreset[] = [
   {
     id: 'underwater',
-    name: 'Underwater Marine',
+    nameKey: 'workflow.configure.effectsPanel.presets.underwater.name',
+    descriptionKey: 'workflow.configure.effectsPanel.presets.underwater.description',
     icon: Fish,
-    description: 'Optimized for underwater datasets with caustics and color tinting',
     config: {
       basic: {
         blur: { enabled: false, min_radius: 1, max_radius: 3 },
@@ -99,9 +101,9 @@ const builtInPresets: EffectsPreset[] = [
   },
   {
     id: 'urban',
-    name: 'Urban Street',
+    nameKey: 'workflow.configure.effectsPanel.presets.urban.name',
+    descriptionKey: 'workflow.configure.effectsPanel.presets.urban.description',
     icon: Building2,
-    description: 'For street scenes, traffic, and urban environments',
     config: {
       basic: {
         blur: { enabled: false, min_radius: 0.5, max_radius: 2 },
@@ -126,9 +128,9 @@ const builtInPresets: EffectsPreset[] = [
   },
   {
     id: 'minimal',
-    name: 'Minimal',
+    nameKey: 'workflow.configure.effectsPanel.presets.minimal.name',
+    descriptionKey: 'workflow.configure.effectsPanel.presets.minimal.description',
     icon: Feather,
-    description: 'Light augmentation for subtle variations',
     config: {
       basic: {
         blur: { enabled: false, min_radius: 0, max_radius: 1 },
@@ -153,9 +155,9 @@ const builtInPresets: EffectsPreset[] = [
   },
   {
     id: 'aggressive',
-    name: 'Aggressive',
+    nameKey: 'workflow.configure.effectsPanel.presets.aggressive.name',
+    descriptionKey: 'workflow.configure.effectsPanel.presets.aggressive.description',
     icon: Zap,
-    description: 'Heavy augmentation for maximum variety',
     config: {
       basic: {
         blur: { enabled: true, min_radius: 0.5, max_radius: 3 },
@@ -184,6 +186,14 @@ const selectedPreset = ref<string | null>(null)
 const savedPresets = ref<EffectsPreset[]>([])
 const showSavePresetModal = ref(false)
 const newPresetName = ref('')
+
+function presetName(preset: EffectsPreset): string {
+  return preset.nameKey ? t(preset.nameKey) : preset.name || ''
+}
+
+function presetDescription(preset: EffectsPreset): string {
+  return preset.descriptionKey ? t(preset.descriptionKey) : ''
+}
 
 // Load saved presets from localStorage
 function loadSavedPresets() {
@@ -239,12 +249,18 @@ function applyPreset(preset: EffectsPreset) {
     effectsConfig.value.perspective = { ...effectsConfig.value.perspective, ...preset.config.perspective }
   }
 
-  uiStore.showSuccess('Preset Applied', `Applied "${preset.name}" preset`)
+  uiStore.showSuccess(
+    t('workflow.configure.effectsPanel.notifications.presetApplied'),
+    t('workflow.configure.effectsPanel.notifications.presetAppliedMsg', { name: presetName(preset) }),
+  )
 }
 
 function saveCurrentAsPreset() {
   if (!newPresetName.value.trim()) {
-    uiStore.showError('Name Required', 'Please enter a name for the preset')
+    uiStore.showError(
+      t('workflow.configure.effectsPanel.notifications.nameRequired'),
+      t('workflow.configure.effectsPanel.notifications.nameRequiredMsg'),
+    )
     return
   }
 
@@ -252,7 +268,6 @@ function saveCurrentAsPreset() {
     id: `custom_${Date.now()}`,
     name: newPresetName.value.trim(),
     icon: Bookmark,
-    description: 'Custom saved preset',
     config: JSON.parse(JSON.stringify(effectsConfig.value)),
   }
 
@@ -260,13 +275,19 @@ function saveCurrentAsPreset() {
   savePresetsToStorage()
   showSavePresetModal.value = false
   newPresetName.value = ''
-  uiStore.showSuccess('Preset Saved', `Saved "${newPreset.name}" preset`)
+  uiStore.showSuccess(
+    t('workflow.configure.effectsPanel.notifications.presetSaved'),
+    t('workflow.configure.effectsPanel.notifications.presetSavedMsg', { name: newPreset.name }),
+  )
 }
 
 function deleteSavedPreset(presetId: string) {
   savedPresets.value = savedPresets.value.filter(p => p.id !== presetId)
   savePresetsToStorage()
-  uiStore.showInfo('Preset Deleted', 'Custom preset has been deleted')
+  uiStore.showInfo(
+    t('workflow.configure.effectsPanel.notifications.presetDeleted'),
+    t('workflow.configure.effectsPanel.notifications.presetDeletedMsg'),
+  )
 }
 
 // Load saved presets on mount
@@ -288,20 +309,31 @@ watch(() => workflowStore.placementConfig, (newVal) => {
   placementConfig.value = JSON.parse(JSON.stringify(newVal))
 }, { deep: true })
 
+// Effective source directories for the preview panel (fall back to the analyzed
+// COCO dataset's own subfolders, mirroring the gateway's compose-batch resolution)
+const effectiveBackgroundsDir = computed(() =>
+  workflowStore.backgroundsDir || (workflowStore.sourceDatasetPath ? `${workflowStore.sourceDatasetPath}/Backgrounds_filtered` : null)
+)
+const effectiveObjectsDir = computed(() =>
+  workflowStore.objectsDir || (workflowStore.sourceDatasetPath ? `${workflowStore.sourceDatasetPath}/Objects` : null)
+)
+
 // Tab options
-const tabs = [
-  { name: 'Basic Augmentation', icon: Sparkles },
-  { name: 'Underwater & Realism', icon: Droplets },
-  { name: 'Blending & Edges', icon: Blend },
-  { name: 'Object Placement', icon: Box },
-]
+const tabs = computed(() => [
+  { name: t('workflow.configure.effectsPanel.tabs.basic'), icon: Sparkles },
+  { name: t('workflow.configure.effectsPanel.tabs.underwater'), icon: Droplets },
+  { name: t('workflow.configure.effectsPanel.tabs.blending'), icon: Blend },
+  { name: t('workflow.configure.effectsPanel.tabs.placement'), icon: Box },
+])
 
 // Basic effects configuration
+type BasicEffectKey = keyof EffectsConfig['basic']
+
 interface BasicEffectConfig {
-  key: string
-  label: string
+  key: BasicEffectKey
+  labelKey: string
   icon: any
-  description: string
+  descriptionKey: string
   hasRange: boolean
   rangeConfig?: {
     minKey: string
@@ -317,101 +349,182 @@ interface BasicEffectConfig {
 const basicEffects: BasicEffectConfig[] = [
   {
     key: 'blur',
-    label: 'Blur',
+    labelKey: 'workflow.configure.effectsPanel.basicEffects.blur.label',
     icon: Focus,
-    description: 'Apply Gaussian blur to images',
+    descriptionKey: 'workflow.configure.effectsPanel.basicEffects.blur.description',
     hasRange: true,
     rangeConfig: { minKey: 'min_radius', maxKey: 'max_radius', min: 0, max: 10, step: 0.5, unit: 'px' },
   },
   {
     key: 'noise',
-    label: 'Noise',
+    labelKey: 'workflow.configure.effectsPanel.basicEffects.noise.label',
     icon: Sparkles,
-    description: 'Add random noise to images',
+    descriptionKey: 'workflow.configure.effectsPanel.basicEffects.noise.description',
     hasRange: true,
     rangeConfig: { minKey: 'min_intensity', maxKey: 'max_intensity', min: 0, max: 0.2, step: 0.01 },
   },
   {
     key: 'brightness',
-    label: 'Brightness',
+    labelKey: 'workflow.configure.effectsPanel.basicEffects.brightness.label',
     icon: Sun,
-    description: 'Adjust image brightness',
+    descriptionKey: 'workflow.configure.effectsPanel.basicEffects.brightness.description',
     hasRange: true,
     rangeConfig: { minKey: 'min_factor', maxKey: 'max_factor', min: 0.5, max: 1.5, step: 0.05 },
   },
   {
     key: 'contrast',
-    label: 'Contrast',
+    labelKey: 'workflow.configure.effectsPanel.basicEffects.contrast.label',
     icon: Contrast,
-    description: 'Adjust image contrast',
+    descriptionKey: 'workflow.configure.effectsPanel.basicEffects.contrast.description',
     hasRange: true,
     rangeConfig: { minKey: 'min_factor', maxKey: 'max_factor', min: 0.5, max: 1.5, step: 0.05 },
   },
   {
     key: 'rotation',
-    label: 'Rotation',
+    labelKey: 'workflow.configure.effectsPanel.basicEffects.rotation.label',
     icon: Move,
-    description: 'Rotate objects randomly',
+    descriptionKey: 'workflow.configure.effectsPanel.basicEffects.rotation.description',
     hasRange: true,
     rangeConfig: { minKey: 'min_angle', maxKey: 'max_angle', min: -180, max: 180, step: 5, unit: '°' },
   },
   {
     key: 'scale',
-    label: 'Scale',
+    labelKey: 'workflow.configure.effectsPanel.basicEffects.scale.label',
     icon: ZoomIn,
-    description: 'Scale objects randomly',
+    descriptionKey: 'workflow.configure.effectsPanel.basicEffects.scale.description',
     hasRange: true,
     rangeConfig: { minKey: 'min_factor', maxKey: 'max_factor', min: 0.5, max: 2, step: 0.1 },
   },
   {
     key: 'flip_horizontal',
-    label: 'Horizontal Flip',
+    labelKey: 'workflow.configure.effectsPanel.basicEffects.flip_horizontal.label',
     icon: FlipHorizontal,
-    description: 'Flip objects horizontally',
+    descriptionKey: 'workflow.configure.effectsPanel.basicEffects.flip_horizontal.description',
     hasRange: false,
     hasProbability: true,
   },
   {
     key: 'flip_vertical',
-    label: 'Vertical Flip',
+    labelKey: 'workflow.configure.effectsPanel.basicEffects.flip_vertical.label',
     icon: FlipVertical,
-    description: 'Flip objects vertically',
+    descriptionKey: 'workflow.configure.effectsPanel.basicEffects.flip_vertical.description',
     hasRange: false,
     hasProbability: true,
   },
 ]
 
 // Lighting type options
-const lightingTypeOptions = [
-  { value: 'ambient', label: 'Ambient' },
-  { value: 'spotlight', label: 'Spotlight' },
-  { value: 'gradient', label: 'Gradient' },
-]
+const lightingTypeOptions = computed(() => [
+  { value: 'ambient', label: t('workflow.configure.effectsPanel.lightingEffect.types.ambient') },
+  { value: 'spotlight', label: t('workflow.configure.effectsPanel.lightingEffect.types.spotlight') },
+  { value: 'gradient', label: t('workflow.configure.effectsPanel.lightingEffect.types.gradient') },
+])
 
 // Water clarity options
-const waterClarityOptions = [
-  { value: 'clear', label: 'Clear' },
-  { value: 'murky', label: 'Murky' },
-  { value: 'very_murky', label: 'Very Murky' },
-]
+const waterClarityOptions = computed(() => [
+  { value: 'clear', label: t('workflow.configure.effectsPanel.underwaterEffect.clarityOptions.clear') },
+  { value: 'murky', label: t('workflow.configure.effectsPanel.underwaterEffect.clarityOptions.murky') },
+  { value: 'very_murky', label: t('workflow.configure.effectsPanel.underwaterEffect.clarityOptions.very_murky') },
+])
 
 // Blend method options
-const blendMethodOptions = [
-  { value: 'alpha', label: 'Alpha Blend' },
-  { value: 'poisson', label: 'Poisson Blend' },
-  { value: 'laplacian', label: 'Laplacian Blend' },
-]
+const blendMethodOptions = computed(() => [
+  { value: 'alpha', label: t('workflow.configure.effectsPanel.blendingMethod.methods.alpha') },
+  { value: 'poisson', label: t('workflow.configure.effectsPanel.blendingMethod.methods.poisson') },
+  { value: 'laplacian', label: t('workflow.configure.effectsPanel.blendingMethod.methods.laplacian') },
+])
 
-function toggleBasicEffect(key: string) {
-  const effect = effectsConfig.value.basic[key as keyof typeof effectsConfig.value.basic] as any
-  effect.enabled = !effect.enabled
+function basicValues(key: BasicEffectKey): Record<string, number | boolean> {
+  return effectsConfig.value.basic[key]
 }
 
+function isBasicEnabled(key: BasicEffectKey): boolean {
+  return basicValues(key).enabled === true
+}
+
+function basicNumber(key: BasicEffectKey, field: string): number {
+  const value = basicValues(key)[field]
+  return typeof value === 'number' ? value : 0
+}
+
+function setBasicNumber(key: BasicEffectKey, field: string, event: Event) {
+  basicValues(key)[field] = Number((event.target as HTMLInputElement).value)
+}
+
+function toggleBasicEffect(key: BasicEffectKey) {
+  basicValues(key).enabled = !isBasicEnabled(key)
+}
+
+// ============================================
+// WATER COLOR (BGR array <-> hex color input)
+// ============================================
+
+function bgrToHex(bgr: [number, number, number]): string {
+  const [b, g, r] = bgr
+  return `#${[r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('')}`
+}
+
+function hexToBgr(hex: string): [number, number, number] {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return [b, g, r]
+}
+
+const waterColorHex = computed({
+  get: () => bgrToHex(effectsConfig.value.underwater.water_color),
+  set: (hex: string) => {
+    effectsConfig.value.underwater.water_color = hexToBgr(hex)
+  },
+})
+
+// ============================================
+// MIN/MAX VALIDATION
+// ============================================
+
+interface ValidationIssue {
+  key: string
+}
+
+const validationIssues = computed<ValidationIssue[]>(() => {
+  const issues: ValidationIssue[] = []
+
+  for (const effect of basicEffects) {
+    if (!effect.rangeConfig) continue
+    if (!isBasicEnabled(effect.key)) continue
+    if (basicNumber(effect.key, effect.rangeConfig.minKey) > basicNumber(effect.key, effect.rangeConfig.maxKey)) {
+      issues.push({ key: `workflow.configure.effectsPanel.basicEffects.${effect.key}.label` })
+    }
+  }
+
+  if (placementConfig.value.min_objects_per_image > placementConfig.value.max_objects_per_image) {
+    issues.push({ key: 'workflow.configure.effectsPanel.placement.objectsPerImage.minMaxError' })
+  }
+  if (placementConfig.value.min_area_ratio > placementConfig.value.max_area_ratio) {
+    issues.push({ key: 'workflow.configure.effectsPanel.placement.areaRatios.minMaxError' })
+  }
+
+  return issues
+})
+
+const hasValidationErrors = computed(() => validationIssues.value.length > 0)
+
 function saveConfig() {
+  if (hasValidationErrors.value) {
+    uiStore.showError(
+      t('workflow.configure.effectsPanel.notifications.validationError'),
+      t('workflow.configure.effectsPanel.notifications.validationErrorMsg'),
+    )
+    return
+  }
+
   workflowStore.updateEffectsConfig(effectsConfig.value)
   workflowStore.updatePlacementConfig(placementConfig.value)
   workflowStore.markStepCompleted(2)
-  uiStore.showSuccess('Configuration Saved', 'Effects and placement configuration has been saved')
+  uiStore.showSuccess(
+    t('workflow.configure.effectsPanel.notifications.configSaved'),
+    t('workflow.configure.effectsPanel.notifications.configSavedMsg'),
+  )
   emit('navigate-next')
 }
 
@@ -420,11 +533,14 @@ function resetConfig() {
   workflowStore.resetPlacementConfig()
   effectsConfig.value = JSON.parse(JSON.stringify(workflowStore.effectsConfig))
   placementConfig.value = JSON.parse(JSON.stringify(workflowStore.placementConfig))
-  uiStore.showInfo('Configuration Reset', 'All configurations have been reset to defaults')
+  uiStore.showInfo(
+    t('workflow.configure.effectsPanel.notifications.configReset'),
+    t('workflow.configure.effectsPanel.notifications.configResetMsg'),
+  )
 }
 
 const enabledBasicEffectsCount = computed(() =>
-  basicEffects.filter(e => (effectsConfig.value.basic[e.key as keyof typeof effectsConfig.value.basic] as any).enabled).length
+  basicEffects.filter(e => isBasicEnabled(e.key)).length
 )
 
 const enabledAdvancedEffectsCount = computed(() => {
@@ -440,6 +556,13 @@ const enabledAdvancedEffectsCount = computed(() => {
   if (effectsConfig.value.perspective.enabled) count++
   return count
 })
+
+// Exposed so ConfigureView's outer "Continue" button can persist local edits
+// (effectsConfig/placementConfig only live here until saveConfig() runs) before navigating.
+defineExpose({
+  save: saveConfig,
+  hasValidationErrors,
+})
 </script>
 
 <template>
@@ -447,7 +570,7 @@ const enabledAdvancedEffectsCount = computed(() => {
     <div class="flex justify-end mb-2">
       <button @click="resetConfig" class="btn-outline flex items-center gap-2">
         <RotateCcw class="h-4 w-4" />
-        Reset All
+        {{ t('workflow.configure.effectsPanel.resetAll') }}
       </button>
     </div>
 
@@ -457,13 +580,13 @@ const enabledAdvancedEffectsCount = computed(() => {
         <div>
           <h3 class="text-lg font-semibold text-white flex items-center gap-2">
             <Bookmark class="h-5 w-5 text-yellow-400" />
-            Quick Presets
+            {{ t('workflow.configure.effectsPanel.presetsTitle') }}
           </h3>
-          <p class="text-sm text-gray-400">Select a preset or create your own configuration</p>
+          <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.presetsSubtitle') }}</p>
         </div>
         <BaseButton variant="outline" size="sm" @click="showSavePresetModal = true">
           <Save class="h-4 w-4" />
-          Save Current
+          {{ t('workflow.configure.effectsPanel.saveCurrent') }}
         </BaseButton>
       </div>
 
@@ -482,15 +605,15 @@ const enabledAdvancedEffectsCount = computed(() => {
         >
           <component :is="preset.icon" class="h-8 w-8 text-primary" />
           <div>
-            <p class="text-sm font-medium text-white">{{ preset.name }}</p>
-            <p class="text-xs text-gray-400">{{ preset.description }}</p>
+            <p class="text-sm font-medium text-white">{{ presetName(preset) }}</p>
+            <p class="text-xs text-gray-400">{{ presetDescription(preset) }}</p>
           </div>
         </button>
       </div>
 
       <!-- Saved Custom Presets -->
       <div v-if="savedPresets.length > 0">
-        <p class="text-sm text-gray-400 mb-2">Your Saved Presets:</p>
+        <p class="text-sm text-gray-400 mb-2">{{ t('workflow.configure.effectsPanel.savedPresetsLabel') }}</p>
         <div class="flex flex-wrap gap-2">
           <button
             v-for="preset in savedPresets"
@@ -523,29 +646,37 @@ const enabledAdvancedEffectsCount = computed(() => {
       @click.self="showSavePresetModal = false"
     >
       <div class="card p-6 max-w-md mx-4">
-        <h3 class="text-lg font-semibold text-white mb-4">Save Current Configuration</h3>
+        <h3 class="text-lg font-semibold text-white mb-4">{{ t('workflow.configure.effectsPanel.saveModal.title') }}</h3>
         <div class="space-y-4">
           <div>
-            <label class="block text-sm text-gray-400 mb-1">Preset Name</label>
+            <label class="block text-sm text-gray-400 mb-1">{{ t('workflow.configure.effectsPanel.saveModal.nameLabel') }}</label>
             <input
               v-model="newPresetName"
               type="text"
               class="input w-full"
-              placeholder="My Custom Preset"
+              :placeholder="t('workflow.configure.effectsPanel.saveModal.namePlaceholder')"
               @keyup.enter="saveCurrentAsPreset"
             />
           </div>
           <div class="flex justify-end gap-3">
             <BaseButton variant="outline" @click="showSavePresetModal = false">
-              Cancel
+              {{ t('workflow.configure.effectsPanel.saveModal.cancel') }}
             </BaseButton>
             <BaseButton @click="saveCurrentAsPreset">
               <Save class="h-4 w-4" />
-              Save Preset
+              {{ t('workflow.configure.effectsPanel.saveModal.save') }}
             </BaseButton>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Validation Errors -->
+    <div v-if="hasValidationErrors" class="rounded-lg border border-red-700/50 bg-red-900/20 p-4">
+      <p class="text-sm font-medium text-red-400 mb-1">{{ t('workflow.configure.effectsPanel.notifications.validationErrorMsg') }}</p>
+      <ul class="text-xs text-red-300 list-disc list-inside">
+        <li v-for="(issue, idx) in validationIssues" :key="idx">{{ t(issue.key) }}</li>
+      </ul>
     </div>
 
     <!-- Tabs -->
@@ -580,7 +711,7 @@ const enabledAdvancedEffectsCount = computed(() => {
               :key="effect.key"
               :class="[
                 'card p-5 transition-all',
-                (effectsConfig.basic[effect.key as keyof typeof effectsConfig.basic] as any).enabled
+                isBasicEnabled(effect.key)
                   ? 'border-primary/50 bg-primary/5'
                   : '',
               ]"
@@ -590,7 +721,7 @@ const enabledAdvancedEffectsCount = computed(() => {
                   <div
                     :class="[
                       'rounded-lg p-2',
-                      (effectsConfig.basic[effect.key as keyof typeof effectsConfig.basic] as any).enabled
+                      isBasicEnabled(effect.key)
                         ? 'bg-primary/20 text-primary'
                         : 'bg-gray-700 text-gray-400',
                     ]"
@@ -598,16 +729,16 @@ const enabledAdvancedEffectsCount = computed(() => {
                     <component :is="effect.icon" class="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 class="font-semibold text-white">{{ effect.label }}</h3>
-                    <p class="text-sm text-gray-400">{{ effect.description }}</p>
+                    <h3 class="font-semibold text-white">{{ t(effect.labelKey) }}</h3>
+                    <p class="text-sm text-gray-400">{{ t(effect.descriptionKey) }}</p>
                   </div>
                 </div>
                 <SwitchGroup>
                   <Switch
-                    :model-value="(effectsConfig.basic[effect.key as keyof typeof effectsConfig.basic] as any).enabled"
+                    :model-value="isBasicEnabled(effect.key)"
                     @update:model-value="toggleBasicEffect(effect.key)"
                     :class="[
-                      (effectsConfig.basic[effect.key as keyof typeof effectsConfig.basic] as any).enabled
+                      isBasicEnabled(effect.key)
                         ? 'bg-primary'
                         : 'bg-gray-600',
                       'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
@@ -615,7 +746,7 @@ const enabledAdvancedEffectsCount = computed(() => {
                   >
                     <span
                       :class="[
-                        (effectsConfig.basic[effect.key as keyof typeof effectsConfig.basic] as any).enabled
+                        isBasicEnabled(effect.key)
                           ? 'translate-x-6'
                           : 'translate-x-1',
                         'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
@@ -627,19 +758,20 @@ const enabledAdvancedEffectsCount = computed(() => {
 
               <!-- Range Sliders -->
               <div
-                v-if="effect.hasRange && (effectsConfig.basic[effect.key as keyof typeof effectsConfig.basic] as any).enabled"
+                v-if="effect.hasRange && isBasicEnabled(effect.key)"
                 class="space-y-3 pt-4 border-t border-gray-700"
               >
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Min Value</span>
+                    <span>{{ t('workflow.configure.effectsPanel.basicEffects.minValue') }}</span>
                     <span class="text-white font-mono">
-                      {{ (effectsConfig.basic[effect.key as keyof typeof effectsConfig.basic] as any)[effect.rangeConfig!.minKey] }}{{ effect.rangeConfig!.unit || '' }}
+                      {{ basicNumber(effect.key, effect.rangeConfig!.minKey) }}{{ effect.rangeConfig!.unit || '' }}
                     </span>
                   </label>
                   <input
                     type="range"
-                    v-model.number="(effectsConfig.basic[effect.key as keyof typeof effectsConfig.basic] as any)[effect.rangeConfig!.minKey]"
+                    :value="basicNumber(effect.key, effect.rangeConfig!.minKey)"
+                    @input="setBasicNumber(effect.key, effect.rangeConfig!.minKey, $event)"
                     :min="effect.rangeConfig!.min"
                     :max="effect.rangeConfig!.max"
                     :step="effect.rangeConfig!.step"
@@ -648,36 +780,44 @@ const enabledAdvancedEffectsCount = computed(() => {
                 </div>
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Max Value</span>
+                    <span>{{ t('workflow.configure.effectsPanel.basicEffects.maxValue') }}</span>
                     <span class="text-white font-mono">
-                      {{ (effectsConfig.basic[effect.key as keyof typeof effectsConfig.basic] as any)[effect.rangeConfig!.maxKey] }}{{ effect.rangeConfig!.unit || '' }}
+                      {{ basicNumber(effect.key, effect.rangeConfig!.maxKey) }}{{ effect.rangeConfig!.unit || '' }}
                     </span>
                   </label>
                   <input
                     type="range"
-                    v-model.number="(effectsConfig.basic[effect.key as keyof typeof effectsConfig.basic] as any)[effect.rangeConfig!.maxKey]"
+                    :value="basicNumber(effect.key, effect.rangeConfig!.maxKey)"
+                    @input="setBasicNumber(effect.key, effect.rangeConfig!.maxKey, $event)"
                     :min="effect.rangeConfig!.min"
                     :max="effect.rangeConfig!.max"
                     :step="effect.rangeConfig!.step"
                     class="w-full accent-primary"
                   />
                 </div>
+                <p
+                  v-if="basicNumber(effect.key, effect.rangeConfig!.minKey) > basicNumber(effect.key, effect.rangeConfig!.maxKey)"
+                  class="text-xs text-red-400"
+                >
+                  {{ t('workflow.configure.effectsPanel.basicEffects.minMaxError') }}
+                </p>
               </div>
 
               <!-- Probability Slider -->
               <div
-                v-if="effect.hasProbability && (effectsConfig.basic[effect.key as keyof typeof effectsConfig.basic] as any).enabled"
+                v-if="effect.hasProbability && isBasicEnabled(effect.key)"
                 class="pt-4 border-t border-gray-700"
               >
                 <label class="text-sm text-gray-400 flex justify-between mb-1">
-                  <span>Probability</span>
+                  <span>{{ t('workflow.configure.effectsPanel.basicEffects.probability') }}</span>
                   <span class="text-white font-mono">
-                    {{ ((effectsConfig.basic[effect.key as keyof typeof effectsConfig.basic] as any).probability * 100).toFixed(0) }}%
+                    {{ (basicNumber(effect.key, 'probability') * 100).toFixed(0) }}%
                   </span>
                 </label>
                 <input
                   type="range"
-                  v-model.number="(effectsConfig.basic[effect.key as keyof typeof effectsConfig.basic] as any).probability"
+                  :value="basicNumber(effect.key, 'probability')"
+                  @input="setBasicNumber(effect.key, 'probability', $event)"
                   min="0"
                   max="1"
                   step="0.1"
@@ -699,8 +839,8 @@ const enabledAdvancedEffectsCount = computed(() => {
                     <Palette class="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 class="font-semibold text-white">Color Correction</h3>
-                    <p class="text-sm text-gray-400">Match object colors to background</p>
+                    <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.colorCorrection.title') }}</h3>
+                    <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.colorCorrection.description') }}</p>
                   </div>
                 </div>
                 <Switch
@@ -712,7 +852,7 @@ const enabledAdvancedEffectsCount = computed(() => {
               </div>
               <div v-if="effectsConfig.color_correction.enabled" class="pt-4 border-t border-gray-700">
                 <label class="text-sm text-gray-400 flex justify-between mb-1">
-                  <span>Color Intensity</span>
+                  <span>{{ t('workflow.configure.effectsPanel.colorCorrection.intensity') }}</span>
                   <span class="text-white font-mono">{{ effectsConfig.color_correction.color_intensity.toFixed(2) }}</span>
                 </label>
                 <input type="range" v-model.number="effectsConfig.color_correction.color_intensity" min="0" max="1" step="0.01" class="w-full accent-primary" />
@@ -727,8 +867,8 @@ const enabledAdvancedEffectsCount = computed(() => {
                     <CloudFog class="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 class="font-semibold text-white">Blur Matching</h3>
-                    <p class="text-sm text-gray-400">Match blur level to background</p>
+                    <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.blurMatching.title') }}</h3>
+                    <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.blurMatching.description') }}</p>
                   </div>
                 </div>
                 <Switch
@@ -740,7 +880,7 @@ const enabledAdvancedEffectsCount = computed(() => {
               </div>
               <div v-if="effectsConfig.blur_matching.enabled" class="pt-4 border-t border-gray-700">
                 <label class="text-sm text-gray-400 flex justify-between mb-1">
-                  <span>Blur Strength</span>
+                  <span>{{ t('workflow.configure.effectsPanel.blurMatching.strength') }}</span>
                   <span class="text-white font-mono">{{ effectsConfig.blur_matching.blur_strength.toFixed(2) }}</span>
                 </label>
                 <input type="range" v-model.number="effectsConfig.blur_matching.blur_strength" min="0" max="1" step="0.05" class="w-full accent-primary" />
@@ -755,8 +895,8 @@ const enabledAdvancedEffectsCount = computed(() => {
                     <Lightbulb class="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 class="font-semibold text-white">Lighting Effects</h3>
-                    <p class="text-sm text-gray-400">Apply realistic lighting to objects</p>
+                    <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.lightingEffect.title') }}</h3>
+                    <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.lightingEffect.description') }}</p>
                   </div>
                 </div>
                 <Switch
@@ -769,12 +909,12 @@ const enabledAdvancedEffectsCount = computed(() => {
               <div v-if="effectsConfig.lighting.enabled" class="space-y-4 pt-4 border-t border-gray-700">
                 <BaseSelect
                   v-model="effectsConfig.lighting.lighting_type"
-                  label="Lighting Type"
+                  :label="t('workflow.configure.effectsPanel.lightingEffect.type')"
                   :options="lightingTypeOptions"
                 />
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Lighting Intensity</span>
+                    <span>{{ t('workflow.configure.effectsPanel.lightingEffect.intensity') }}</span>
                     <span class="text-white font-mono">{{ effectsConfig.lighting.lighting_intensity.toFixed(2) }}</span>
                   </label>
                   <input type="range" v-model.number="effectsConfig.lighting.lighting_intensity" min="0" max="1" step="0.05" class="w-full accent-primary" />
@@ -790,8 +930,8 @@ const enabledAdvancedEffectsCount = computed(() => {
                     <Waves class="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 class="font-semibold text-white">Underwater Tint</h3>
-                    <p class="text-sm text-gray-400">Apply underwater color effects</p>
+                    <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.underwaterEffect.title') }}</h3>
+                    <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.underwaterEffect.description') }}</p>
                   </div>
                 </div>
                 <Switch
@@ -804,31 +944,21 @@ const enabledAdvancedEffectsCount = computed(() => {
               <div v-if="effectsConfig.underwater.enabled" class="space-y-4 pt-4 border-t border-gray-700">
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Underwater Intensity</span>
+                    <span>{{ t('workflow.configure.effectsPanel.underwaterEffect.intensity') }}</span>
                     <span class="text-white font-mono">{{ effectsConfig.underwater.underwater_intensity.toFixed(2) }}</span>
                   </label>
                   <input type="range" v-model.number="effectsConfig.underwater.underwater_intensity" min="0" max="1" step="0.05" class="w-full accent-primary" />
                 </div>
                 <BaseSelect
                   v-model="effectsConfig.underwater.water_clarity"
-                  label="Water Clarity"
+                  :label="t('workflow.configure.effectsPanel.underwaterEffect.clarity')"
                   :options="waterClarityOptions"
                 />
                 <div>
-                  <label class="text-sm text-gray-400 mb-2 block">Water Color (RGB)</label>
-                  <div class="flex gap-2">
-                    <div class="flex-1">
-                      <label class="text-xs text-gray-500">R</label>
-                      <input type="number" v-model.number="effectsConfig.underwater.water_color[0]" min="0" max="255" class="input w-full text-sm" />
-                    </div>
-                    <div class="flex-1">
-                      <label class="text-xs text-gray-500">G</label>
-                      <input type="number" v-model.number="effectsConfig.underwater.water_color[1]" min="0" max="255" class="input w-full text-sm" />
-                    </div>
-                    <div class="flex-1">
-                      <label class="text-xs text-gray-500">B</label>
-                      <input type="number" v-model.number="effectsConfig.underwater.water_color[2]" min="0" max="255" class="input w-full text-sm" />
-                    </div>
+                  <label class="text-sm text-gray-400 mb-2 block">{{ t('workflow.configure.effectsPanel.underwaterEffect.colorLabel') }}</label>
+                  <div class="flex items-center gap-3">
+                    <input type="color" v-model="waterColorHex" class="h-10 w-16 rounded cursor-pointer bg-transparent" />
+                    <span class="text-sm text-gray-400 font-mono">{{ waterColorHex }}</span>
                   </div>
                 </div>
               </div>
@@ -842,8 +972,8 @@ const enabledAdvancedEffectsCount = computed(() => {
                     <Layers class="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 class="font-semibold text-white">Drop Shadows</h3>
-                    <p class="text-sm text-gray-400">Add realistic shadows to objects</p>
+                    <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.shadowsEffect.title') }}</h3>
+                    <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.shadowsEffect.description') }}</p>
                   </div>
                 </div>
                 <Switch
@@ -856,14 +986,14 @@ const enabledAdvancedEffectsCount = computed(() => {
               <div v-if="effectsConfig.shadows.enabled" class="space-y-4 pt-4 border-t border-gray-700">
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Shadow Opacity</span>
+                    <span>{{ t('workflow.configure.effectsPanel.shadowsEffect.opacity') }}</span>
                     <span class="text-white font-mono">{{ effectsConfig.shadows.shadow_opacity.toFixed(2) }}</span>
                   </label>
                   <input type="range" v-model.number="effectsConfig.shadows.shadow_opacity" min="0" max="1" step="0.05" class="w-full accent-primary" />
                 </div>
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Shadow Blur</span>
+                    <span>{{ t('workflow.configure.effectsPanel.shadowsEffect.blur') }}</span>
                     <span class="text-white font-mono">{{ effectsConfig.shadows.shadow_blur }}px</span>
                   </label>
                   <input type="range" v-model.number="effectsConfig.shadows.shadow_blur" min="0" max="100" step="5" class="w-full accent-primary" />
@@ -879,8 +1009,8 @@ const enabledAdvancedEffectsCount = computed(() => {
                     <Droplets class="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 class="font-semibold text-white">Caustics</h3>
-                    <p class="text-sm text-gray-400">Light refraction patterns</p>
+                    <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.causticsEffect.title') }}</h3>
+                    <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.causticsEffect.description') }}</p>
                   </div>
                 </div>
                 <Switch
@@ -893,13 +1023,13 @@ const enabledAdvancedEffectsCount = computed(() => {
               <div v-if="effectsConfig.caustics.enabled" class="space-y-4 pt-4 border-t border-gray-700">
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Caustics Intensity</span>
+                    <span>{{ t('workflow.configure.effectsPanel.causticsEffect.intensity') }}</span>
                     <span class="text-white font-mono">{{ effectsConfig.caustics.caustics_intensity.toFixed(2) }}</span>
                   </label>
                   <input type="range" v-model.number="effectsConfig.caustics.caustics_intensity" min="0" max="1" step="0.05" class="w-full accent-primary" />
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-sm text-gray-400">Deterministic Pattern</span>
+                  <span class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.causticsEffect.deterministic') }}</span>
                   <Switch
                     v-model="effectsConfig.caustics.caustics_deterministic"
                     :class="[effectsConfig.caustics.caustics_deterministic ? 'bg-primary' : 'bg-gray-600', 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors']"
@@ -918,8 +1048,8 @@ const enabledAdvancedEffectsCount = computed(() => {
                     <Wind class="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 class="font-semibold text-white">Motion Blur</h3>
-                    <p class="text-sm text-gray-400">Simulate movement blur</p>
+                    <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.motionBlurEffect.title') }}</h3>
+                    <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.motionBlurEffect.description') }}</p>
                   </div>
                 </div>
                 <Switch
@@ -932,14 +1062,14 @@ const enabledAdvancedEffectsCount = computed(() => {
               <div v-if="effectsConfig.motion_blur.enabled" class="space-y-4 pt-4 border-t border-gray-700">
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Probability</span>
+                    <span>{{ t('workflow.configure.effectsPanel.motionBlurEffect.probability') }}</span>
                     <span class="text-white font-mono">{{ (effectsConfig.motion_blur.motion_blur_probability * 100).toFixed(0) }}%</span>
                   </label>
                   <input type="range" v-model.number="effectsConfig.motion_blur.motion_blur_probability" min="0" max="1" step="0.05" class="w-full accent-primary" />
                 </div>
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Kernel Size</span>
+                    <span>{{ t('workflow.configure.effectsPanel.motionBlurEffect.kernel') }}</span>
                     <span class="text-white font-mono">{{ effectsConfig.motion_blur.motion_blur_kernel }}px</span>
                   </label>
                   <input type="range" v-model.number="effectsConfig.motion_blur.motion_blur_kernel" min="3" max="31" step="2" class="w-full accent-primary" />
@@ -955,8 +1085,8 @@ const enabledAdvancedEffectsCount = computed(() => {
                     <Eye class="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 class="font-semibold text-white">Perspective Warp</h3>
-                    <p class="text-sm text-gray-400">Apply perspective distortion</p>
+                    <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.perspectiveEffect.title') }}</h3>
+                    <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.perspectiveEffect.description') }}</p>
                   </div>
                 </div>
                 <Switch
@@ -968,13 +1098,20 @@ const enabledAdvancedEffectsCount = computed(() => {
               </div>
               <div v-if="effectsConfig.perspective.enabled" class="pt-4 border-t border-gray-700">
                 <label class="text-sm text-gray-400 flex justify-between mb-1">
-                  <span>Magnitude</span>
+                  <span>{{ t('workflow.configure.effectsPanel.perspectiveEffect.magnitude') }}</span>
                   <span class="text-white font-mono">{{ effectsConfig.perspective.perspective_magnitude.toFixed(2) }}</span>
                 </label>
                 <input type="range" v-model.number="effectsConfig.perspective.perspective_magnitude" min="0" max="0.3" step="0.01" class="w-full accent-primary" />
               </div>
             </div>
           </div>
+
+          <EffectsPreviewPanel
+            :effects-config="effectsConfig"
+            :backgrounds-dir="effectiveBackgroundsDir"
+            :objects-dir="effectiveObjectsDir"
+            :output-dir="workflowStore.outputDir"
+          />
         </TabPanel>
 
         <!-- Blending & Edges Tab -->
@@ -987,18 +1124,18 @@ const enabledAdvancedEffectsCount = computed(() => {
                   <Blend class="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 class="font-semibold text-white">Blending Method</h3>
-                  <p class="text-sm text-gray-400">How objects blend with background</p>
+                  <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.blendingMethod.title') }}</h3>
+                  <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.blendingMethod.description') }}</p>
                 </div>
               </div>
               <div class="space-y-4 pt-4 border-t border-gray-700">
                 <BaseSelect
                   v-model="effectsConfig.blending.blend_method"
-                  label="Method"
+                  :label="t('workflow.configure.effectsPanel.blendingMethod.method')"
                   :options="blendMethodOptions"
                 />
                 <div class="flex items-center justify-between">
-                  <span class="text-sm text-gray-400">Use Binary Alpha</span>
+                  <span class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.blendingMethod.binaryAlpha') }}</span>
                   <Switch
                     v-model="effectsConfig.blending.use_binary_alpha"
                     :class="[effectsConfig.blending.use_binary_alpha ? 'bg-primary' : 'bg-gray-600', 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors']"
@@ -1008,7 +1145,7 @@ const enabledAdvancedEffectsCount = computed(() => {
                 </div>
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Alpha Feather Radius</span>
+                    <span>{{ t('workflow.configure.effectsPanel.blendingMethod.featherRadius') }}</span>
                     <span class="text-white font-mono">{{ effectsConfig.blending.alpha_feather_radius }}px</span>
                   </label>
                   <input type="range" v-model.number="effectsConfig.blending.alpha_feather_radius" min="0" max="10" step="1" class="w-full accent-primary" />
@@ -1024,8 +1161,8 @@ const enabledAdvancedEffectsCount = computed(() => {
                     <Maximize2 class="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 class="font-semibold text-white">Edge Smoothing</h3>
-                    <p class="text-sm text-gray-400">Smooth object edges</p>
+                    <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.edgeSmoothingEffect.title') }}</h3>
+                    <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.edgeSmoothingEffect.description') }}</p>
                   </div>
                 </div>
                 <Switch
@@ -1037,7 +1174,7 @@ const enabledAdvancedEffectsCount = computed(() => {
               </div>
               <div v-if="effectsConfig.edge_smoothing.enabled" class="pt-4 border-t border-gray-700">
                 <label class="text-sm text-gray-400 flex justify-between mb-1">
-                  <span>Edge Feather</span>
+                  <span>{{ t('workflow.configure.effectsPanel.edgeSmoothingEffect.feather') }}</span>
                   <span class="text-white font-mono">{{ effectsConfig.edge_smoothing.edge_feather }}px</span>
                 </label>
                 <input type="range" v-model.number="effectsConfig.edge_smoothing.edge_feather" min="0" max="20" step="1" class="w-full accent-primary" />
@@ -1051,13 +1188,13 @@ const enabledAdvancedEffectsCount = computed(() => {
                   <Focus class="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 class="font-semibold text-white">Max Blur Budget</h3>
-                  <p class="text-sm text-gray-400">Maximum cumulative blur applied</p>
+                  <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.blurBudget.title') }}</h3>
+                  <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.blurBudget.description') }}</p>
                 </div>
               </div>
               <div class="pt-4 border-t border-gray-700">
                 <label class="text-sm text-gray-400 flex justify-between mb-1">
-                  <span>Blur Budget</span>
+                  <span>{{ t('workflow.configure.effectsPanel.blurBudget.label') }}</span>
                   <span class="text-white font-mono">{{ effectsConfig.max_blur_budget.toFixed(1) }}</span>
                 </label>
                 <input type="range" v-model.number="effectsConfig.max_blur_budget" min="0" max="50" step="0.5" class="w-full accent-primary" />
@@ -1076,25 +1213,28 @@ const enabledAdvancedEffectsCount = computed(() => {
                   <Box class="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 class="font-semibold text-white">Objects Per Image</h3>
-                  <p class="text-sm text-gray-400">Number of objects to place</p>
+                  <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.placement.objectsPerImage.title') }}</h3>
+                  <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.placement.objectsPerImage.description') }}</p>
                 </div>
               </div>
               <div class="space-y-4 pt-4 border-t border-gray-700">
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Minimum</span>
+                    <span>{{ t('workflow.configure.effectsPanel.placement.objectsPerImage.min') }}</span>
                     <span class="text-white font-mono">{{ placementConfig.min_objects_per_image }}</span>
                   </label>
                   <input type="range" v-model.number="placementConfig.min_objects_per_image" min="1" max="10" step="1" class="w-full accent-primary" />
                 </div>
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Maximum</span>
+                    <span>{{ t('workflow.configure.effectsPanel.placement.objectsPerImage.max') }}</span>
                     <span class="text-white font-mono">{{ placementConfig.max_objects_per_image }}</span>
                   </label>
                   <input type="range" v-model.number="placementConfig.max_objects_per_image" min="1" max="20" step="1" class="w-full accent-primary" />
                 </div>
+                <p v-if="placementConfig.min_objects_per_image > placementConfig.max_objects_per_image" class="text-xs text-red-400">
+                  {{ t('workflow.configure.effectsPanel.placement.objectsPerImage.minMaxError') }}
+                </p>
               </div>
             </div>
 
@@ -1105,21 +1245,21 @@ const enabledAdvancedEffectsCount = computed(() => {
                   <Maximize2 class="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 class="font-semibold text-white">Size Constraints</h3>
-                  <p class="text-sm text-gray-400">Object size limits</p>
+                  <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.placement.sizeConstraints.title') }}</h3>
+                  <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.placement.sizeConstraints.description') }}</p>
                 </div>
               </div>
               <div class="space-y-4 pt-4 border-t border-gray-700">
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Min Size Ratio</span>
+                    <span>{{ t('workflow.configure.effectsPanel.placement.sizeConstraints.minSizeRatio') }}</span>
                     <span class="text-white font-mono">{{ (placementConfig.min_object_size_ratio * 100).toFixed(1) }}%</span>
                   </label>
                   <input type="range" v-model.number="placementConfig.min_object_size_ratio" min="0.01" max="0.2" step="0.005" class="w-full accent-primary" />
                 </div>
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Absolute Min Size</span>
+                    <span>{{ t('workflow.configure.effectsPanel.placement.sizeConstraints.absoluteMinSize') }}</span>
                     <span class="text-white font-mono">{{ placementConfig.absolute_min_size }}px</span>
                   </label>
                   <input type="range" v-model.number="placementConfig.absolute_min_size" min="5" max="50" step="5" class="w-full accent-primary" />
@@ -1134,25 +1274,28 @@ const enabledAdvancedEffectsCount = computed(() => {
                   <Layers class="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 class="font-semibold text-white">Area Ratios</h3>
-                  <p class="text-sm text-gray-400">Object area relative to image</p>
+                  <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.placement.areaRatios.title') }}</h3>
+                  <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.placement.areaRatios.description') }}</p>
                 </div>
               </div>
               <div class="space-y-4 pt-4 border-t border-gray-700">
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Min Area Ratio</span>
+                    <span>{{ t('workflow.configure.effectsPanel.placement.areaRatios.min') }}</span>
                     <span class="text-white font-mono">{{ (placementConfig.min_area_ratio * 100).toFixed(1) }}%</span>
                   </label>
                   <input type="range" v-model.number="placementConfig.min_area_ratio" min="0.001" max="0.1" step="0.005" class="w-full accent-primary" />
                 </div>
                 <div>
                   <label class="text-sm text-gray-400 flex justify-between mb-1">
-                    <span>Max Area Ratio</span>
+                    <span>{{ t('workflow.configure.effectsPanel.placement.areaRatios.max') }}</span>
                     <span class="text-white font-mono">{{ (placementConfig.max_area_ratio * 100).toFixed(1) }}%</span>
                   </label>
                   <input type="range" v-model.number="placementConfig.max_area_ratio" min="0.1" max="0.8" step="0.05" class="w-full accent-primary" />
                 </div>
+                <p v-if="placementConfig.min_area_ratio > placementConfig.max_area_ratio" class="text-xs text-red-400">
+                  {{ t('workflow.configure.effectsPanel.placement.areaRatios.minMaxError') }}
+                </p>
               </div>
             </div>
 
@@ -1163,16 +1306,37 @@ const enabledAdvancedEffectsCount = computed(() => {
                   <Box class="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 class="font-semibold text-white">Overlap Threshold</h3>
-                  <p class="text-sm text-gray-400">Maximum allowed object overlap</p>
+                  <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.placement.overlap.title') }}</h3>
+                  <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.placement.overlap.description') }}</p>
                 </div>
               </div>
               <div class="pt-4 border-t border-gray-700">
                 <label class="text-sm text-gray-400 flex justify-between mb-1">
-                  <span>Threshold</span>
+                  <span>{{ t('workflow.configure.effectsPanel.placement.overlap.threshold') }}</span>
                   <span class="text-white font-mono">{{ (placementConfig.overlap_threshold * 100).toFixed(0) }}%</span>
                 </label>
                 <input type="range" v-model.number="placementConfig.overlap_threshold" min="0" max="0.5" step="0.05" class="w-full accent-primary" />
+              </div>
+            </div>
+
+            <!-- Semantic Placement -->
+            <div class="card p-5">
+              <div class="flex items-start justify-between">
+                <div class="flex items-center gap-3">
+                  <div :class="['rounded-lg p-2', workflowStore.semanticPlacement ? 'bg-primary/20 text-primary' : 'bg-gray-700 text-gray-400']">
+                    <Waves class="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 class="font-semibold text-white">{{ t('workflow.configure.effectsPanel.placement.semanticPlacement.title') }}</h3>
+                    <p class="text-sm text-gray-400">{{ t('workflow.configure.effectsPanel.placement.semanticPlacement.description') }}</p>
+                  </div>
+                </div>
+                <Switch
+                  v-model="workflowStore.semanticPlacement"
+                  :class="[workflowStore.semanticPlacement ? 'bg-primary' : 'bg-gray-600', 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0']"
+                >
+                  <span :class="[workflowStore.semanticPlacement ? 'translate-x-6' : 'translate-x-1', 'inline-block h-4 w-4 transform rounded-full bg-white transition-transform']" />
+                </Switch>
               </div>
             </div>
           </div>

@@ -225,7 +225,6 @@ async def get_feature_importance(source: str = "combined"):
     Returns:
         Feature importance scores showing which parameters most affect gap score.
     """
-    from app.main import state
 
     # Get or create predictor and optimizer from state
     # (In practice, these would be persisted in state or loaded from disk)

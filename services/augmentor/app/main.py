@@ -19,7 +19,7 @@ import uuid
 import asyncio
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any
 from contextlib import asynccontextmanager
 
 import torch
@@ -31,6 +31,8 @@ from loguru import logger
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from shared.job_database import JobDatabase, get_job_db
 from shared.job_logger import JobLogger
+from app.batch_recovery import recover_batch_state
+from app.synth_profile import get_profile
 
 from app.models.schemas import (
     # Requests
@@ -88,6 +90,10 @@ class ServiceState:
             from app.validators import QualityValidator, PhysicsValidator
             self.quality_validator = QualityValidator(use_gpu=self.gpu_available)
             self.physics_validator = PhysicsValidator()
+            # Inject into composer so batch paths can validate per image
+            if self.composer:
+                self.composer.quality_validator = self.quality_validator
+                self.composer.physics_validator = self.physics_validator
             logger.info("Validators initialized")
         except Exception as e:
             logger.error(f"Failed to initialize validators: {e}")
@@ -284,6 +290,7 @@ async def compose_image(request: ComposeRequest):
             effects_config=request.effects_config,
             output_path=request.output_path,
             save_annotations=request.save_annotations,
+            semantic_placement=request.semantic_placement,
         )
 
         # Quality validation if requested
@@ -324,6 +331,7 @@ async def compose_image(request: ComposeRequest):
             annotations=result.annotations,
             objects_placed=result.objects_placed,
             depth_used=result.depth_used,
+            depth_source=result.depth_source,
             effects_applied=result.effects_applied,
             quality_score=quality_score,
             physics_violations=physics_violations,
@@ -971,7 +979,7 @@ def _regenerate_coco_from_annotations(images_dir: str, output_coco_path: str) ->
                     h = ann.get("height", 0)
                     area = ann.get("area", w * h)
 
-                    annotations_list.append({
+                    coco_ann = {
                         "id": annotation_id,
                         "image_id": img_idx,
                         "category_name": class_name,  # Temporary, will be replaced with ID
@@ -979,7 +987,13 @@ def _regenerate_coco_from_annotations(images_dir: str, output_coco_path: str) ->
                         "area": area,
                         "segmentation": [],
                         "iscrowd": 0
-                    })
+                    }
+                    if ann.get("source_object"):
+                        coco_ann["source_object"] = ann["source_object"]
+                    for key in ("scale", "target_rel_size", "augmentations"):
+                        if ann.get(key) is not None:
+                            coco_ann[key] = ann[key]
+                    annotations_list.append(coco_ann)
                     annotation_id += 1
             except Exception as e:
                 logger.warning(f"Could not read annotations {ann_path}: {e}")
@@ -1164,26 +1178,20 @@ async def run_batch_composition_resume(
 
     try:
         # Calculate remaining work
-        already_generated = checkpoint.get("generated", 0)
+        # The committed COCO, not progress.json, says what the batch holds:
+        # images accepted after the last flush are set aside (batch_recovery).
+        recovered = recover_batch_state(job_output_dir)
+        if recovered["moved"]:
+            job_logger.warning(
+                f"{recovered['moved']} uncommitted file(s) moved to images_unflushed/",
+                {"checkpoint_generated": checkpoint.get("generated", 0),
+                 "committed_images": recovered["generated"]},
+            )
+        already_generated = recovered["generated"]
         remaining_images = request.num_images - already_generated
 
-        if remaining_images <= 0:
-            # Job was already complete
-            state.db.complete_job(
-                job_id,
-                "completed",
-                result_summary={
-                    "images_generated": already_generated,
-                    "images_rejected": checkpoint.get("rejected", 0),
-                    "synthetic_counts": checkpoint.get("synthetic_counts", {}),
-                },
-                processing_time_ms=0
-            )
-            job_logger.complete("Job already completed (no remaining images)")
-            return
-
         # Calculate remaining targets per class
-        existing_counts = checkpoint.get("synthetic_counts", {})
+        existing_counts = recovered["counts"]
         original_targets = checkpoint.get("targets_per_class") or request.targets_per_class
         remaining_targets = None
 
@@ -1194,6 +1202,22 @@ async def run_batch_composition_resume(
                 remaining = max(0, target - current)
                 if remaining > 0:
                     remaining_targets[cls] = remaining
+
+        # An empty remaining_targets means every class is covered; passing it on
+        # would be read as "no targets" and generate a new auto-balanced batch.
+        if remaining_images <= 0 or (original_targets and not remaining_targets):
+            state.db.complete_job(
+                job_id,
+                "completed",
+                result_summary={
+                    "images_generated": already_generated,
+                    "images_rejected": checkpoint.get("rejected", 0),
+                    "synthetic_counts": existing_counts,
+                },
+                processing_time_ms=0
+            )
+            job_logger.complete("Job already completed (no remaining images or class targets)")
+            return
 
         # Run composition for remaining images
         result = await state.composer.compose_batch(
@@ -1210,6 +1234,8 @@ async def run_batch_composition_resume(
             validate_quality=request.validate_quality,
             validate_physics=request.validate_physics,
             reject_invalid=request.reject_invalid,
+            semantic_placement=request.semantic_placement,
+            **_synth_kwargs(request),
             save_pipeline_debug=request.save_pipeline_debug,
             progress_callback=lambda p: update_job_progress(
                 job_id,
@@ -1219,12 +1245,14 @@ async def run_batch_composition_resume(
                     "pending": p.get("pending", 0),
                     "counts": merge_counts(existing_counts, p.get("counts", {})),
                     "current_class": p.get("current_class", ""),
+                    "next_image_index": p.get("next_image_index"),
                 },
                 job_output_dir,
                 request
             ),
             cancel_check=check_cancelled,
-            resume_from_index=checkpoint.get("last_image_index", -1) + 1,
+            dataset_info=request.dataset_info.model_dump() if request.dataset_info else None,
+            resume_from_index=recovered["next_image_index"],
         )
 
         processing_time = (time.time() - start_time) * 1000
@@ -1244,6 +1272,7 @@ async def run_batch_composition_resume(
                     "images_rejected": total_rejected,
                     "synthetic_counts": final_counts,
                     "output_coco_path": result.output_coco_path,
+                    **_synth_summary(result),
                 },
                 processing_time_ms=processing_time
             )
@@ -1257,6 +1286,7 @@ async def run_batch_composition_resume(
                     "images_rejected": total_rejected,
                     "synthetic_counts": final_counts,
                     "output_coco_path": result.output_coco_path,
+                    **_synth_summary(result),
                 },
                 processing_time_ms=processing_time
             )
@@ -1313,6 +1343,30 @@ def merge_counts(existing: dict, new: dict) -> dict:
     return result
 
 
+def _synth_kwargs(request: ComposeBatchRequest) -> Dict[str, Any]:
+    """Synthesis profile and batch seed for the composer (empty = legacy behaviour, no synthesis profile)."""
+    profile = get_profile(request.synth_profile, request.synth_overrides)
+    return {"synth_profile": profile, "seed": request.seed} if profile else {}
+
+
+def _synth_summary(result) -> Dict[str, Any]:
+    """Extra batch-summary fields when a profile is active (classes exhausted by max_crop_reuse)."""
+    if not getattr(result, "synth_profile", None):
+        return {}
+    return {"synth_profile": result.synth_profile, "exhausted_classes": result.exhausted_classes}
+
+
+def _seed_rngs(seed: Optional[int], job_logger) -> None:
+    """Seed Python and NumPy global RNGs (used for backgrounds, crops, rotation, scale, position)."""
+    if seed is None:
+        return
+    import random
+    import numpy as np
+    random.seed(seed)
+    np.random.seed(seed % (2 ** 32))
+    job_logger.info("RNGs seeded", {"seed": seed})
+
+
 async def run_batch_composition(job_id: str, request: ComposeBatchRequest, job_output_dir: str):
     """Background task for batch composition"""
     import time
@@ -1330,6 +1384,7 @@ async def run_batch_composition(job_id: str, request: ComposeBatchRequest, job_o
     # Update status to running
     state.db.update_job_status(job_id, "running", started_at=datetime.now())
     job_logger.start("Starting batch composition")
+    _seed_rngs(request.seed, job_logger)
 
     # Cancellation check callback
     def check_cancelled() -> bool:
@@ -1361,6 +1416,11 @@ async def run_batch_composition(job_id: str, request: ComposeBatchRequest, job_o
                 progress_callback=lambda p: update_job_progress(job_id, p, job_output_dir, request),
                 cancel_check=check_cancelled,
                 dataset_info=dataset_info_dict,
+                validate_quality=request.validate_quality,
+                validate_physics=request.validate_physics,
+                reject_invalid=request.reject_invalid,
+                semantic_placement=request.semantic_placement,
+                **_synth_kwargs(request),
             )
         else:
             job_logger.info("Starting SEQUENTIAL batch (legacy mode)")
@@ -1378,6 +1438,8 @@ async def run_batch_composition(job_id: str, request: ComposeBatchRequest, job_o
                 validate_quality=request.validate_quality,
                 validate_physics=request.validate_physics,
                 reject_invalid=request.reject_invalid,
+                semantic_placement=request.semantic_placement,
+                **_synth_kwargs(request),
                 save_pipeline_debug=request.save_pipeline_debug,
                 progress_callback=lambda p: update_job_progress(job_id, p, job_output_dir, request),
                 cancel_check=check_cancelled,
@@ -1397,6 +1459,7 @@ async def run_batch_composition(job_id: str, request: ComposeBatchRequest, job_o
                     "images_rejected": result.images_rejected,
                     "synthetic_counts": result.synthetic_counts,
                     "output_coco_path": result.output_coco_path,
+                    **_synth_summary(result),
                 },
                 processing_time_ms=processing_time
             )
@@ -1410,6 +1473,7 @@ async def run_batch_composition(job_id: str, request: ComposeBatchRequest, job_o
                     "images_rejected": result.images_rejected,
                     "synthetic_counts": result.synthetic_counts,
                     "output_coco_path": result.output_coco_path,
+                    **_synth_summary(result),
                 },
                 processing_time_ms=processing_time
             )
@@ -1487,7 +1551,7 @@ def update_job_progress(job_id: str, progress: dict, output_dir: str = None, req
         )
 
     # Save checkpoint every 10 images
-    if output_dir and generated > 0 and generated % 10 == 0:
+    if output_dir and generated > 0 and (generated % 10 == 0 or pending == 0):
         save_checkpoint(job_id, output_dir, progress, request)
 
 
@@ -1504,7 +1568,9 @@ def save_checkpoint(job_id: str, output_dir: str, progress: dict, request: Compo
             "synthetic_counts": progress.get("counts", {}),
             "targets_per_class": request.targets_per_class if request else None,
             "num_images": request.num_images if request else None,
-            "last_image_index": progress.get("generated", 0) - 1,
+            # Rejected attempts also consume indices, so `generated` is not the
+            # next free file name; fall back to it only for old callers.
+            "last_image_index": (progress.get("next_image_index") or progress.get("generated", 0)) - 1,
             "timestamp": datetime.now().isoformat()
         }
 

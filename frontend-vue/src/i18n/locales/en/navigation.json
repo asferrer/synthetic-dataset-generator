@@ -35,6 +35,7 @@
     "domainCreate": "Create Domain",
     "objectExtraction": "Object Extraction",
     "domainGap": "Domain Gap Reduction",
+    "datasetViewer": "Dataset Viewer",
     "system": "System Monitor",
     "notFound": "Page Not Found"
   },

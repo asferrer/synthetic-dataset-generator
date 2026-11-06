@@ -18,9 +18,8 @@ import gc
 import cv2
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple, Callable
+from typing import TYPE_CHECKING, Dict, List, Any, Optional, Tuple, Callable
 from datetime import datetime
-from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 
@@ -32,13 +31,11 @@ except ImportError:
 
 from PIL import Image
 
-from app.models.extraction_schemas import (
-    AnnotationType,
-    ExtractionMethod,
-    CategoryInfo,
-    ExtractedObjectInfo,
-    ExtractionSummary,
-)
+from app.models.extraction_schemas import AnnotationType, ExtractionMethod, ExtractionSummary
+
+if TYPE_CHECKING:
+    from app.models.extraction_schemas import DeduplicationConfig
+    from app.utils import ExtractionRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -2625,7 +2622,7 @@ class ObjectExtractor:
         Returns:
             Extraction results dictionary
         """
-        from app.utils import ExtractionRegistry, SAM3Instance
+        from app.utils import ExtractionRegistry
         from app.models.extraction_schemas import DeduplicationConfig
 
         start_time = datetime.now()

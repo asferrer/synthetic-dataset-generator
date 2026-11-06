@@ -8,7 +8,7 @@ import os
 import time
 import logging
 from pathlib import Path
-from typing import Optional, Tuple, List, Dict, Any
+from typing import Optional, List, Dict, Any
 
 import cv2
 import numpy as np

@@ -5,8 +5,9 @@ Allows runtime modification of object real-world sizes for better realism.
 import json
 import os
 from typing import Dict, Optional
-from pathlib import Path
 import threading
+
+from loguru import logger
 
 
 class ObjectSizeConfig:
@@ -42,7 +43,7 @@ class ObjectSizeConfig:
                 self._config = self._get_default_config()
                 self._save_config()
         except Exception as e:
-            print(f"Error loading config from {self.config_path}: {e}")
+            logger.error(f"Error loading config from {self.config_path}: {e}")
             self._config = self._get_default_config()
 
     def _save_config(self):
@@ -52,7 +53,7 @@ class ObjectSizeConfig:
             with open(self.config_path, 'w') as f:
                 json.dump(self._config, f, indent=2)
         except Exception as e:
-            print(f"Error saving config to {self.config_path}: {e}")
+            logger.error(f"Error saving config to {self.config_path}: {e}")
 
     def _get_default_config(self) -> dict:
         """Get default configuration."""

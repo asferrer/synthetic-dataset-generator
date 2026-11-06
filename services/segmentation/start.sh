@@ -17,7 +17,7 @@ if [ -n "$HF_TOKEN" ]; then
     fi
 else
     echo "WARNING: HF_TOKEN not set. SAM3 model may not load (gated model)."
-    echo "Set HF_TOKEN in .env.microservices to enable SAM3 features."
+    echo "Set HF_TOKEN in .env to enable SAM3 features."
 fi
 
 echo "Starting Segmentation Service..."

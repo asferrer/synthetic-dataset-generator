@@ -20,7 +20,6 @@ class DGRTechnique(str, Enum):
     """Available domain gap reduction techniques."""
     DOMAIN_RANDOMIZATION = "domain_randomization"
     STYLE_TRANSFER = "neural_style_transfer"
-    CYCLEGAN = "cyclegan_translation"
     DIFFUSION_REFINEMENT = "diffusion_refinement"
 
 
@@ -406,62 +405,6 @@ class StyleTransferResponse(BaseModel):
 
 
 # =============================================================================
-# CycleGAN
-# =============================================================================
-
-class CycleGANTrainConfig(BaseModel):
-    """Configuration for CycleGAN training."""
-    reference_set_id: str = Field(description="Real images reference set")
-    synthetic_images_dir: str = Field(description="Synthetic images for training")
-    epochs: int = Field(100, ge=10, le=500)
-    batch_size: int = Field(1, ge=1, le=8)
-    learning_rate: float = Field(2e-4, gt=0)
-    lambda_cycle: float = Field(10.0, ge=0, description="Cycle consistency loss weight")
-    lambda_identity: float = Field(0.5, ge=0, description="Identity loss weight")
-    lambda_lpips: float = Field(1.0, ge=0, description="LPIPS perceptual loss weight")
-    image_size: int = Field(512, ge=256, le=1024)
-    save_interval: int = Field(10, ge=1, description="Save checkpoint every N epochs")
-    use_attention: bool = Field(True, description="Use attention in generator")
-
-
-class CycleGANTranslateConfig(BaseModel):
-    """Configuration for CycleGAN inference."""
-    model_id: str = Field(description="ID of trained CycleGAN model")
-    preserve_annotations: bool = Field(True, description="Copy annotations alongside")
-
-
-class CycleGANTranslateRequest(BaseModel):
-    """Request to translate images with CycleGAN."""
-    image_path: str
-    config: CycleGANTranslateConfig
-    output_path: str
-
-
-class CycleGANTranslateBatchRequest(BaseModel):
-    """Request to translate a batch with CycleGAN."""
-    images_dir: str
-    config: CycleGANTranslateConfig
-    output_dir: str
-
-
-class CycleGANModel(BaseModel):
-    """Information about a trained CycleGAN model."""
-    model_id: str
-    reference_set_id: str
-    epochs_trained: int
-    image_size: int
-    final_fid: Optional[float] = None
-    model_dir: str
-    created_at: datetime = Field(default_factory=datetime.now)
-
-
-class CycleGANModelsResponse(BaseModel):
-    """Response listing trained CycleGAN models."""
-    models: List[CycleGANModel]
-    total: int
-
-
-# =============================================================================
 # Optimization
 # =============================================================================
 
@@ -526,7 +469,6 @@ class HealthResponse(BaseModel):
     gpu_memory: Optional[str] = None
     engines_loaded: Dict[str, bool] = Field(default_factory=dict)
     reference_sets_count: int = 0
-    cyclegan_models_count: int = 0
     timestamp: datetime = Field(default_factory=datetime.now)
 
 

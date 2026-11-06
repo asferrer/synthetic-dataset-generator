@@ -1,5 +1,5 @@
 # Domain Gap Reduction Service Dockerfile
-# GPU-enabled for metrics (Inception v3), style transfer (VGG-19), CycleGAN
+# GPU-enabled for metrics (Inception v3), style transfer (VGG-19) and diffusion refinement
 
 FROM nvidia/cuda:12.4.0-runtime-ubuntu22.04
 

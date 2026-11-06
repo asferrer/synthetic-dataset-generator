@@ -21,8 +21,6 @@ from typing import List, Dict, Tuple, Optional, Any
 from dataclasses import dataclass, field
 from enum import Enum
 import logging
-import json
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -782,7 +780,6 @@ class SemanticSceneAnalyzer:
     ) -> Tuple[SceneAnalysis, DebugInfo]:
         """Analyze scene with full debug information."""
         import time
-        import os
 
         start_time = time.time()
         h, w = image.shape[:2]

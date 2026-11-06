@@ -64,7 +64,7 @@ async function analyzeSelected() {
     uiStore.showSuccess(t('workflow.analysis.notifications.analysisComplete'), t('workflow.analysis.notifications.analysisCompleteMsg'))
   } catch (e: any) {
     error.value = e.message || t('workflow.analysis.notifications.analysisFailed')
-    uiStore.showError(t('workflow.analysis.notifications.analysisFailed'), error.value)
+    uiStore.showError(t('workflow.analysis.notifications.analysisFailed'), error.value ?? undefined)
   } finally {
     analyzing.value = false
   }
@@ -94,7 +94,7 @@ async function handleFileUpload(event: Event) {
     await analyzeSelected()
   } catch (e: any) {
     error.value = e.message || t('workflow.analysis.notifications.uploadFailed')
-    uiStore.showError(t('workflow.analysis.notifications.uploadFailed'), error.value)
+    uiStore.showError(t('workflow.analysis.notifications.uploadFailed'), error.value ?? undefined)
   } finally {
     loading.value = false
   }

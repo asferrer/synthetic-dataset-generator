@@ -1,368 +1,146 @@
 # Synthetic Dataset Generator
 
-![Python](https://img.shields.io/badge/Python-3.9+-blue)
-![License](https://img.shields.io/badge/License-Apache%202.0-green)
-![Docker](https://img.shields.io/badge/Docker-Microservices-blue)
-![CUDA](https://img.shields.io/badge/CUDA-GPU%20Accelerated-green)
-<a href="mailto:asanc.tech@gmail.com">
-    <img alt="email" src="https://img.shields.io/badge/contact-email-yellow">
-</a>
+Generator of synthetic object-detection datasets by copy-paste composition with depth-aware placement, physically
+motivated effects and automatic quality validation. It is organised as a set of FastAPI microservices behind a
+gateway, with a Vue web interface. The built-in domain presets cover underwater scenes (used for marine debris
+detection), fire and smoke, and aerial scenes; new domains are added with a JSON file.
 
-**Photorealistic synthetic data generation with AI-powered realism effects and microservices architecture.**
-
-Generate high-quality synthetic datasets for object detection with intelligent scene understanding, depth-aware composition, and physics-based lighting simulation. Domain-agnostic with built-in presets for underwater, urban, and aerial environments.
-
----
-
-## Table of Contents
-
-- [Features](#features)
-- [Architecture](#architecture)
-- [Quick Start](#quick-start)
-- [Workflow (4 Steps)](#workflow)
-- [Tools](#tools)
-- [Generation Pipeline](#generation-pipeline)
-- [Configuration](#configuration)
-- [API Reference](#api-reference)
-- [Related Projects](#related-projects)
-
----
+The generator was developed for the marine debris detection work of the OceanguardAI project and produced the
+synthetic batch used in the thesis experiments. The configuration of that batch is documented in
+[`docs/SYNTHESIS_PROFILE.md`](docs/SYNTHESIS_PROFILE.md).
 
 ## Features
 
-### Core Capabilities
-
-| Feature | Description |
-|---------|-------------|
-| **AI-Powered Depth Estimation** | Depth Anything V3 for accurate monocular depth maps |
-| **Semantic Scene Analysis** | SAM3 text-prompted segmentation with heuristic fallback |
-| **Intelligent Object Placement** | Physics-aware positioning based on scene understanding |
-| **Multi-Light Source Detection** | Advanced lighting estimation with shadow generation |
-| **Quality Validation** | LPIPS perceptual metrics and physics consistency checks |
-| **Parallel Batch Processing** | Process 4-8 images concurrently for 4x throughput |
-| **Domain Gap Reduction** | FID/KID metrics, style transfer, diffusion refinement |
-| **Multi-Domain Support** | Configurable domains (underwater, urban, aerial, custom) |
-| **Auto-Tune** | Automatic effect optimization to minimize domain gap |
-
-### AI Models
-
-| Model | Service | Purpose |
-|-------|---------|---------|
-| **Depth Anything V3** | Depth (:8001) | Monocular depth estimation |
-| **SAM3** | Segmentation (:8002) | Text-prompted scene segmentation |
-| **LPIPS** | Augmentor (:8004) | Perceptual quality validation |
-
-### Realism Effects Pipeline
-
-1. **Depth-Aware Composition** - Objects scaled and blurred based on depth
-2. **Multi-Light Shadow Generation** - Realistic shadows from detected light sources
-3. **Adaptive Color Matching** - Histogram matching and tone adaptation
-4. **Domain-Specific Effects** - Underwater caustics, fire glow, aerial haze
-5. **Poisson Blending** - Seamless boundary integration
-6. **Edge Smoothing** - Distance transform-based feathering
-
----
+- Depth-aware composition: object scale, blur and occlusion follow a monocular depth map (Depth Anything 3).
+- Scene understanding with text-prompted segmentation (SAM 3) and a heuristic fallback.
+- Object extraction from annotated datasets into RGBA crop libraries.
+- Realism effects: colour matching, blur matching, underwater tint, caustics, multi-light shadows, edge smoothing,
+  Poisson blending.
+- Synthesis profiles (`legacy`, `v10`, `v11`): class-faithful scale and count, placement from real position
+  statistics, copy-paste onto real backgrounds, visibility filter, background matching, tight boxes.
+- Quality validation with LPIPS, physics consistency checks and anomaly detection; invalid images can be rejected.
+- Domain-gap tools: FID/KID metrics, domain randomization, depth-aware style transfer (WCT), diffusion refinement, and
+  automatic tuning of the effect parameters.
+- Dataset utilities: combine, split (percentage or K-fold), balance and export to COCO, YOLO and Pascal VOC.
 
 ## Architecture
 
 ```
-                              +------------------+
-                              |    Frontend      |
-                              |   (Vue 3 SPA)   |
-                              |   Port: 3001     |
-                              +--------+---------+
-                                       |
-                                       v
-                              +------------------+
-                              |    Gateway       |
-                              |   (FastAPI)      |
-                              |   Port: 8000     |
-                              +--------+---------+
-                                       |
-              +------------+-----------+-----------+------------+
-              |            |           |           |            |
-              v            v           v           v            v
-     +----------+  +------------+  +--------+  +----------+  +----------+
-     |  Depth   |  |Segmentation|  |Effects |  |Augmentor |  |Domain Gap|
-     |  DA-V3   |  |   SAM3     |  | (CPU)  |  |(Composer)|  | (Metrics)|
-     |  :8001   |  |   :8002    |  | :8003  |  |  :8004   |  |  :8005   |
-     +----------+  +------------+  +--------+  +----------+  +----------+
+                 Frontend (Vue 3, :3001)
+                          |
+                  Gateway (FastAPI, :8000)
+                          |
+      +---------+---------+----------+-------------+
+      |         |         |          |             |
+    Depth   Segmentation  Augmentor  Domain Gap   (shared job
+    :8001      :8002       :8004      :8005        database)
 ```
 
-### Services
+| Service | Port | GPU | Role |
+|---|---|---|---|
+| Gateway | 8000 | no | API orchestration, routing, domain registry |
+| Depth | 8001 | yes | Depth Anything 3 inference |
+| Segmentation | 8002 | yes | SAM 3 scene analysis and object extraction |
+| Augmentor | 8004 | yes | Composition, effects, placement and validation |
+| Domain Gap | 8005 | yes | Metrics, style transfer, diffusion, auto-tune |
+| Frontend | 3001 | no | Web interface |
 
-| Service | Port | GPU | Description |
-|---------|------|-----|-------------|
-| **Gateway** | 8000 | No | API orchestration, routing, domain management |
-| **Depth** | 8001 | Yes | Depth Anything V3 inference |
-| **Segmentation** | 8002 | Yes | SAM3 scene analysis + object extraction |
-| **Effects** | 8003 | No | Lighting, caustics, blur, color correction |
-| **Augmentor** | 8004 | Yes | Image composition and validation |
-| **Domain Gap** | 8005 | Yes | FID/KID metrics, style transfer, diffusion |
-| **Frontend** | 3001 | No | Vue 3 + Tailwind CSS web interface |
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the design, [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) for the
+web workflow and [`docs/ML_AUTO_TUNING.md`](docs/ML_AUTO_TUNING.md) for the auto-tuning module.
 
----
+## Requirements
 
-## Quick Start
+- Docker with the NVIDIA Container Toolkit.
+- An NVIDIA GPU (CUDA 12.8 images; developed on an RTX 5090) with at least 8 GB of VRAM.
+- 16 GB of RAM (32 GB recommended).
+- A Hugging Face token with access to the gated `facebook/sam3` model.
 
-### Prerequisites
-
-- Docker with NVIDIA Container Toolkit
-- NVIDIA GPU with 12+ GB VRAM
-- 32+ GB RAM
-
-### Launch
+## Installation
 
 ```bash
-# Clone and start
-git clone <repo-url>
-cd synthetic_dataset_generator
+git clone https://github.com/asferrer/synthetic-dataset-generator.git
+cd synthetic-dataset-generator
 
-# Configure environment
-cp .env.microservices .env
-# Edit .env: set DATASET_PATH, HF_TOKEN
+cp .env.microservices.example .env
+# Edit .env: DATASET_PATH (folder with Backgrounds_filtered/ and the crop libraries) and HF_TOKEN
 
-# Start all services
-docker-compose -f docker-compose.microservices.yml up -d
-
-# Open browser
-open http://localhost:3001
-```
-
-### Verify Services
-
-```bash
+docker compose -f docker-compose.microservices.yml up -d --build
 curl http://localhost:8000/health
 ```
 
----
+Open <http://localhost:3001>. `.env` holds the Hugging Face token and is git-ignored; never commit it.
 
-## Workflow
+## Usage
 
-The application follows a streamlined 4-step workflow:
+The web interface follows four steps: prepare sources, configure effects and placement, generate, and export
+(combine, split, balance, convert format). Batches can also be launched through the API:
 
-```
-  [1. PREPARE]  -->  [2. CONFIGURE]  -->  [3. GENERATE]  -->  [4. EXPORT]
-   Analyze &         Effects &            Launch batch        Export, combine,
-   select sources    object sizes         + monitor           split & balance
-```
-
-### Step 1: Prepare (`/prepare`)
-
-| Tab | Description |
-|-----|-------------|
-| **Analyze** | Upload/select a COCO JSON dataset to analyze class distribution. Or skip to "Custom Objects Mode" if you only have object cutouts. |
-| **Sources** | Select background images directory, object sources directory, and output path. In custom mode, select which object classes to include. |
-
-### Step 2: Configure (`/configure`)
-
-| Tab | Description |
-|-----|-------------|
-| **Effects & Placement** | Choose a preset (Underwater, Urban, Minimal, Aggressive) or manually configure 15+ effects across 4 categories: Basic Augmentation, Underwater & Realism, Blending & Edges, Object Placement. Enable Auto-Tune for automatic domain gap optimization. |
-| **Object Sizes** | Configure real-world size ratios per class. Load presets (Marine Life, Vehicles, Common Objects) or add custom classes. |
-
-### Step 3: Generate (`/generate`)
-
-- Set target image count **per category**
-- Configure validation thresholds (quality, physics, anomaly detection)
-- Batch processing options (concurrency, VRAM threshold)
-- Dataset metadata (name, version, license)
-- Real-time progress monitoring with ETA
-
-### Step 4: Export (`/export`)
-
-| Tab | Description |
-|-----|-------------|
-| **Export** | Convert to YOLO, Pascal VOC, or COCO format |
-| **Combine** | Merge multiple datasets (synthetic + real) |
-| **Split** | Train/val/test split (percentage or K-Fold) |
-| **Balance** | Oversample, undersample, or weight classes |
-
----
-
-## Tools
-
-Standalone tools accessible from the sidebar:
-
-### Object Extraction
-
-Extract object cutouts from annotated datasets for use as synthetic generation sources. Supports SAM3-enhanced segmentation for precise boundaries.
-
-### Domain Gap Reduction
-
-Measure and reduce the gap between synthetic and real data:
-
-| Feature | Description |
-|---------|-------------|
-| **Reference Images** | Upload real-world reference sets |
-| **Validation** | Compute FID, KID, RADIO-MMD, color distribution metrics |
-| **Domain Randomization** | Apply random augmentations to increase variety |
-| **Style Transfer** | Transfer visual style from real images |
-| **Diffusion Refinement** | Use ControlNet, IP-Adapter, or LoRA to close the gap |
-
-### System Monitor
-
-Monitor all running jobs and service health from a unified dashboard:
-- Filter jobs by status/type
-- View logs, retry failed jobs, resume interrupted batches
-- Real-time service health with GPU/memory info
-
----
-
-## Generation Pipeline
-
-```
-[Background] + [Objects]
-        |
-        v
-+-- Depth Service ----> Depth Map (0-1)
-        |
-        v
-+-- Augmentor --------> Lighting Estimation
-        |                     |
-        v                     v
-    Object Placement    Shadow Generation
-    (depth-aware)       (multi-light)
-        |
-        v
-+-- Effects ----------> Color Correction
-        |                Blur Matching
-        |                Underwater Tint
-        |                Caustics
-        |                Edge Smoothing
-        v
-    Quality Validation
-    (LPIPS + Physics)
-        |
-        v
-    [Output Image + COCO Annotations]
+```bash
+curl -X POST http://localhost:8004/compose-batch -H "Content-Type: application/json" \
+     -d @configs/batch_request.json
 ```
 
-### Performance
+`configs/batch_request.json` holds the effects, per-class targets and validation settings of the thesis batch; add
+`"synth_profile": "v11"` (and optional `synth_overrides`) to enable a synthesis profile.
 
-| Images | Sequential | Parallel (4x) | Speedup |
-|--------|------------|---------------|---------|
-| 10 | 60-120s | 15-30s | 4x |
-| 100 | 10-20 min | 2.5-5 min | 4x |
-| 1000 | 100-200 min | 25-50 min | 4x |
-
----
-
-## Configuration
-
-### Domain Configuration
-
-Domains define the visual rules for generation. Located in `config/domains/`:
-
-| Domain | Description |
-|--------|-------------|
-| `underwater.json` | Marine debris detection (master domain) |
-| `fire_smoke.json` | Fire and smoke scenarios |
-| `aerial_birds.json` | Aerial bird detection |
-| `_template.json` | Template for custom domains |
-
-Each domain configures: regions, objects, physics, effects, presets, and domain gap profiles.
-
-### Effects Presets
-
-| Preset | Use Case |
-|--------|----------|
-| **Underwater Marine** | Caustics, color tinting, water attenuation |
-| **Urban Street** | Motion blur, perspective, gradient lighting |
-| **Minimal** | Light augmentation for subtle variations |
-| **Aggressive** | Heavy augmentation for maximum variety |
-
-### Resource Allocation
-
-| Service | CPU | RAM | GPU VRAM |
-|---------|-----|-----|----------|
-| Gateway | 2 cores | 4 GB | - |
-| Depth | 3 cores | 12 GB | Shared |
-| Segmentation | 3 cores | 12 GB | Shared |
-| Effects | 2 cores | 4 GB | - |
-| Augmentor | 8 cores | 24 GB | Shared |
-| Domain Gap | 4 cores | 16 GB | Shared |
-
----
-
-## API Reference
-
-### Core Endpoints
-
-```
-GET  /health                     # Service health check
-POST /generate/image             # Generate single image
-POST /generate/batch             # Generate batch (async)
-GET  /jobs/all                   # List all jobs
-GET  /jobs/{job_id}              # Job status
-```
-
-### Generation
-
-```
-POST /augment/compose            # Compose single image
-POST /augment/compose-batch      # Batch composition (async)
-POST /augment/validate           # Validate image quality
-POST /augment/lighting           # Estimate lighting
-```
-
-### Object Extraction
-
-```
-POST /segmentation/extract/objects          # Extract objects (async)
-POST /segmentation/extract/single-object    # Extract single object
-POST /segmentation/extract/analyze-dataset  # Analyze annotation types
-```
-
-### Domain Gap
-
-```
-POST /domain-gap/references/upload    # Upload reference images
-POST /domain-gap/metrics/compute      # Compute FID/KID
-POST /domain-gap/randomize/apply      # Domain randomization
-POST /domain-gap/style-transfer/apply # Style transfer
-POST /domain-gap/diffusion/refine     # Diffusion refinement
-POST /domain-gap/lora/train           # Train LoRA adapter
-```
+Endpoint reference: the OpenAPI documentation of each service at `http://localhost:<port>/docs`.
 
 ### Domains
 
+Domains are defined in `config/domains/` (`underwater.json`, `fire_smoke.json`, `aerial_birds.json`; start from
+`_template.json` for a new one) and validated against `domain_schema.json`. A domain sets regions, object classes,
+physics, effects, presets and domain-gap profiles.
+
+## Reproducing the synthetic batch of the thesis
+
+[`docs/SYNTHESIS_PROFILE.md`](docs/SYNTHESIS_PROFILE.md) lists the inputs, the statistics scripts, the crop library
+filter (`tools/clean_crops.py`) and the commands that generate the batch with `tools/run_variants.py`.
+
+## Repository layout
+
 ```
-GET  /domains                    # List domains
-POST /domains/{id}/activate      # Activate domain
-POST /domains                    # Create custom domain
+services/        gateway, depth, segmentation, augmentor, domain_gap and shared job utilities
+frontend-vue/    Vue 3 + Tailwind web interface
+config/          domain definitions, object size priors
+configs/         service configuration and the batch request used in the thesis
+scripts/         statistics and descriptor builders, test helpers
+tools/           crop-library cleaning, mask refinement, box refit, variant runner
+tests/           unit, integration (Docker) and end-to-end tests
+docs/            user guide, auto-tuning, synthesis profiles, references
 ```
 
-### Datasets
+## Tests
 
+```bash
+pip install -r requirements-dev.txt torch==2.6.0 torchvision==0.21.0 lpips
+cd services/augmentor && python -m pytest tests -q        # profile, placement and composition logic; no GPU
+cd ../.. && python -m pytest tests/unit -q                # crop-library cleaning and mask refinement
+cd services/domain_gap && python -m pytest tests -q       # schemas of the domain-gap service
 ```
-POST /datasets/analyze           # Analyze dataset
-POST /datasets/combine           # Combine datasets
-POST /datasets/split             # Train/val/test split
-POST /datasets/kfold             # K-Fold split
-POST /datasets/export            # Export to YOLO/VOC
+
+Integration and end-to-end tests (`tests/integration`, `tests/e2e`) need the Docker stack running.
+
+## Third-party models and licenses
+
+Model weights are not distributed with this repository; each service downloads them from the original source under
+its own license. See [`NOTICE`](NOTICE) for the list (SAM 3, Depth Anything 3, Stable Diffusion, ControlNet,
+IP-Adapter, LPIPS). Depth Anything 3 Large and Giant are CC BY-NC 4.0; the default Base model is Apache-2.0.
+The key references are collected in [`docs/references.bib`](docs/references.bib).
+
+## Citation
+
+If you use this code, please cite the article (metadata also in [`CITATION.cff`](CITATION.cff)):
+
+```bibtex
+@article{sanchezferrer2026synthetic,
+  title   = {When Does Synthetic Data Help Underwater Debris Detection? Gap Metrics, Data Regimes and Detector Paradigms},
+  author  = {S{\'a}nchez-Ferrer, Alejandro and Gallego, Antonio Javier and Calvo-Zaragoza, Jorge},
+  journal = {Neurocomputing},
+  year    = {2026},
+  note    = {Manuscript in preparation}
+}
 ```
-
----
-
-## Related Projects
-
-### Annotation Tool
-
-The labeling and annotation features have been extracted to a standalone tool:
-
-**Repository:** `annotation-tool` (same workspace)
-
-Features:
-- Auto Labeling with SAM3
-- Visual COCO annotation editor (similar to CVAT)
-- Label Manager (rename, delete categories)
-- SAM3 bbox-to-mask conversion
-
-The annotation tool shares the SAM3 segmentation service but operates independently with its own lightweight gateway.
-
----
 
 ## License
 
-Apache 2.0
+Apache License 2.0. See [`LICENSE`](LICENSE).

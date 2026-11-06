@@ -21,6 +21,24 @@ export interface COCOCategory {
   supercategory?: string
 }
 
+export interface COCOPhysicsViolation {
+  violation_type: string
+  object_class: string
+  severity: string
+  description: string
+  suggested_fix?: string | null
+}
+
+export interface COCOQualityInfo {
+  perceptual_quality?: number
+  distribution_match?: number
+  anomaly_score?: number
+  composition_score?: number
+  overall_score?: number
+  overall_pass?: boolean
+  physics_violations?: COCOPhysicsViolation[]
+}
+
 export interface COCOImage {
   id: number
   file_name: string
@@ -30,6 +48,9 @@ export interface COCOImage {
   license?: number
   coco_url?: string
   flickr_url?: string
+  // Extra fields added by the augmentor for generated datasets
+  depth_source?: string
+  quality?: COCOQualityInfo
 }
 
 export interface COCOAnnotation {

@@ -101,32 +101,6 @@ class TestGenerationPipeline:
         # Pipeline should complete
         assert compose_response.status_code in [200, 422]
 
-    def test_effects_application_pipeline(
-        self,
-        docker_services,
-        effects_url,
-        sample_image_base64,
-        sample_rgba_base64
-    ):
-        """Test effects application pipeline."""
-        effects_to_test = ["color_transfer", "blur_match"]
-
-        for effect in effects_to_test:
-            response = requests.post(
-                f"{effects_url}/apply",
-                json={
-                    "background_base64": sample_image_base64,
-                    "foreground_base64": sample_rgba_base64,
-                    "effects": [effect]
-                },
-                timeout=120
-            )
-
-            if response.status_code == 404:
-                continue  # Skip if endpoint not available
-
-            assert response.status_code == 200, f"Effect {effect} failed: {response.text}"
-
     def test_validation_in_pipeline(
         self,
         docker_services,
@@ -174,10 +148,14 @@ class TestGenerationPipeline:
 class TestBatchGeneration:
     """End-to-end tests for batch generation."""
 
-    def test_batch_generation_start(self, docker_services, gateway_url, sample_batch_config, tmp_path):
+    def test_batch_generation_start(self, docker_services, gateway_url, tmp_path):
         """Test starting a batch generation job."""
-        # Update config with actual paths
-        config = sample_batch_config.copy()
+        config = {
+            "backgrounds_dir": str(tmp_path / "backgrounds"),
+            "objects_dir": str(tmp_path / "objects"),
+            "output_dir": str(tmp_path / "output"),
+            "num_images": 5,
+        }
 
         response = requests.post(
             f"{gateway_url}/generate/batch",

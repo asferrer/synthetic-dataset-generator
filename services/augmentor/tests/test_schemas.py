@@ -21,6 +21,7 @@ from app.models.schemas import (
     PhysicsViolationInfo,
     LightingInfo,
     ComposeRequest,
+    ComposeBatchRequest,
     ValidateRequest,
     HealthResponse,
 )
@@ -115,27 +116,38 @@ class TestAnnotationBox:
         assert box.class_name == "fish"
         assert box.confidence == 1.0  # default
         assert box.area == 0  # default
+        assert box.source_object is None  # default
+
+    def test_source_object(self):
+        """The crop used for the annotation is kept for provenance."""
+        box = AnnotationBox(x=0, y=0, width=1, height=1, class_name="Can",
+                            source_object="/app/datasets/objs/Can/123.png")
+        assert box.model_dump()["source_object"].endswith("Can/123.png")
 
 
 class TestEffectsConfig:
     """Test EffectsConfig schema."""
 
     def test_defaults(self):
-        """Verify default values are correct (BUG #11 revised defaults)."""
+        """Verify defaults match the Apr 2026 parameter studies."""
         config = EffectsConfig()
-        assert config.color_intensity == 0.12  # Revised from 0.15 (BUG #11)
-        assert config.blur_strength == 0.5
-        assert config.underwater_intensity == 0.15
-        assert config.caustics_intensity == 0.10  # Revised from 0.15 (BUG #11)
-        assert config.shadow_opacity == 0.10  # Revised from 0.12 (BUG #11)
-        assert config.shadow_blur == 25  # Revised from 31 (BUG #11)
-        assert config.edge_feather == 4
+        assert config.color_intensity == 0.25
+        assert config.blur_strength == 0.65
+        assert config.underwater_intensity == 0.33
+        assert config.caustics_intensity == 0.12
+        assert config.shadow_opacity == 0.12
+        assert config.shadow_blur == 28
+        assert config.edge_feather == 12
+        assert config.water_color == (180, 120, 30)
         assert config.water_clarity == WaterClarity.CLEAR
         # New fields from bug fixes
         assert config.validate_identity is False  # Disabled by default (too strict for underwater)
         assert config.use_binary_alpha is True
-        assert config.caustics_deterministic is True
         assert config.recalculate_bbox_after_global is True
+        # Physical realism flags default OFF (paper comparability)
+        assert config.underwater_physical is False
+        assert config.caustics_depth_aware is False
+        assert config.depth_occlusion is False
 
     def test_custom_values(self):
         """Create with custom values."""
@@ -211,3 +223,12 @@ class TestHealthResponse:
         )
         assert health.status == "healthy"
         assert health.gpu_available is True
+
+
+class TestComposeBatchRequest:
+    """Test ComposeBatchRequest reproducibility fields."""
+
+    def test_seed_default_and_value(self):
+        base = dict(backgrounds_dir="/bg", objects_dir="/obj", output_dir="/out", num_images=10)
+        assert ComposeBatchRequest(**base).seed is None
+        assert ComposeBatchRequest(**base, seed=21).seed == 21

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useUiStore } from '@/stores/ui'
 import { startExtraction, getExtractionStatus, listDatasets } from '@/lib/api'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -16,9 +17,10 @@ import {
   Copy,
   Box,
 } from 'lucide-vue-next'
-import type { DatasetInfo, Job } from '@/types/api'
+import type { DatasetInfo, ExtractionJobStatus } from '@/types/api'
 
 const uiStore = useUiStore()
+const { t } = useI18n()
 
 const loading = ref(false)
 const extracting = ref(false)
@@ -32,7 +34,7 @@ const useSam3 = ref(false)
 const padding = ref(10)
 const deduplicate = ref(false)
 const showAdvanced = ref(false)
-const currentJob = ref<Job | null>(null)
+const currentJob = ref<ExtractionJobStatus | null>(null)
 const error = ref<string | null>(null)
 let pollingInterval: ReturnType<typeof setInterval> | null = null
 
@@ -49,7 +51,7 @@ async function loadDatasets() {
 
 async function startExtractionJob() {
   if (!cocoJsonPath.value || !imagesDir.value) {
-    uiStore.showError('Missing Input', 'Please specify COCO JSON path and images directory')
+    uiStore.showError(t('tools.objectExtraction.missingInput'), t('tools.objectExtraction.missingInputMsg'))
     return
   }
 
@@ -69,11 +71,11 @@ async function startExtractionJob() {
       deduplicate: deduplicate.value,
     })
 
-    uiStore.showSuccess('Extraction Started', `Job ${response.job_id.slice(0, 8)} started`)
+    uiStore.showSuccess(t('tools.objectExtraction.notifications.started'), t('tools.objectExtraction.notifications.startedMsg', { id: response.job_id.slice(0, 8) }))
     startPolling(response.job_id)
   } catch (e: any) {
-    error.value = e.message || 'Failed to start extraction'
-    uiStore.showError('Extraction Failed', error.value)
+    error.value = e.message || t('tools.objectExtraction.extractionFailedMsg')
+    uiStore.showError(t('tools.objectExtraction.notifications.failed'), error.value ?? undefined)
     extracting.value = false
   }
 }
@@ -86,12 +88,12 @@ async function pollJobStatus(jobId: string) {
     if (job.status === 'completed') {
       stopPolling()
       extracting.value = false
-      uiStore.showSuccess('Extraction Complete', 'Objects extracted successfully')
+      uiStore.showSuccess(t('tools.objectExtraction.notifications.completed'), t('tools.objectExtraction.notifications.completedMsg'))
     } else if (job.status === 'failed') {
       stopPolling()
       extracting.value = false
-      error.value = job.error || 'Extraction failed'
-      uiStore.showError('Extraction Failed', error.value)
+      error.value = job.errors[0] || t('tools.objectExtraction.notifications.failed')
+      uiStore.showError(t('tools.objectExtraction.notifications.failed'), error.value ?? undefined)
     }
   } catch (e) {
     // Ignore polling errors
@@ -121,9 +123,9 @@ loadDatasets()
   <div class="space-y-6">
     <!-- Header -->
     <div>
-      <h2 class="text-2xl font-bold text-white">Object Extraction</h2>
+      <h2 class="text-2xl font-bold text-white">{{ t('tools.objectExtraction.title') }}</h2>
       <p class="mt-1 text-gray-400">
-        Extract individual objects from a dataset for use in synthetic generation.
+        {{ t('tools.objectExtraction.subtitle') }}
       </p>
     </div>
 
@@ -133,12 +135,12 @@ loadDatasets()
     <div class="grid gap-6 lg:grid-cols-2">
       <!-- Input -->
       <div class="card p-6">
-        <h3 class="text-lg font-semibold text-white mb-4">Source Dataset</h3>
+        <h3 class="text-lg font-semibold text-white mb-4">{{ t('tools.objectExtraction.sourceDatasetTitle') }}</h3>
 
         <div class="space-y-4">
           <DirectoryBrowser
             v-model="cocoJsonPath"
-            label="COCO JSON Path"
+            :label="t('tools.objectExtraction.cocoJsonPath')"
             placeholder="/app/datasets/annotations.json"
             :show-files="true"
             file-pattern="*.json"
@@ -146,7 +148,7 @@ loadDatasets()
           />
           <DirectoryBrowser
             v-model="imagesDir"
-            label="Images Directory"
+            :label="t('tools.objectExtraction.imagesDirectory')"
             placeholder="/app/datasets/images"
             path-mode="input"
           />
@@ -155,19 +157,19 @@ loadDatasets()
 
       <!-- Output -->
       <div class="card p-6">
-        <h3 class="text-lg font-semibold text-white mb-4">Output Settings</h3>
+        <h3 class="text-lg font-semibold text-white mb-4">{{ t('tools.objectExtraction.outputSettingsTitle') }}</h3>
 
         <div class="space-y-4">
           <DirectoryBrowser
             v-model="outputDir"
-            label="Output Directory"
+            :label="t('tools.objectExtraction.outputDirectory')"
             placeholder="/app/output/extracted"
             path-mode="output"
           />
 
           <div>
             <label class="text-sm text-gray-400 flex justify-between mb-2">
-              <span>Minimum Object Size</span>
+              <span>{{ t('tools.objectExtraction.minObjectSize') }}</span>
               <span class="text-white">{{ minSize }}px</span>
             </label>
             <input
@@ -187,8 +189,8 @@ loadDatasets()
               class="h-5 w-5 rounded border-gray-600 bg-background-tertiary text-primary focus:ring-primary"
             />
             <div>
-              <span class="text-gray-300">Include segmentation masks</span>
-              <p class="text-xs text-gray-500">Extract masks along with object crops</p>
+              <span class="text-gray-300">{{ t('tools.objectExtraction.includeMasks') }}</span>
+              <p class="text-xs text-gray-500">{{ t('tools.objectExtraction.includeMasksDesc') }}</p>
             </div>
           </label>
         </div>
@@ -203,7 +205,7 @@ loadDatasets()
       >
         <h3 class="text-lg font-semibold text-white flex items-center gap-2">
           <Settings class="h-5 w-5" />
-          Advanced Options
+          {{ t('tools.objectExtraction.advancedOptionsTitle') }}
         </h3>
         <span class="text-gray-400">{{ showAdvanced ? '▲' : '▼' }}</span>
       </button>
@@ -221,11 +223,10 @@ loadDatasets()
               <div class="flex-1">
                 <div class="flex items-center gap-2">
                   <Wand2 class="h-4 w-4 text-yellow-400" />
-                  <span class="text-gray-300 font-medium">Use SAM3 for masks</span>
+                  <span class="text-gray-300 font-medium">{{ t('tools.objectExtraction.useSam3') }}</span>
                 </div>
                 <p class="text-xs text-gray-500 mt-1">
-                  Generate precise segmentation masks using Segment Anything Model 3.
-                  More accurate but slower.
+                  {{ t('tools.objectExtraction.useSam3Desc') }}
                 </p>
               </div>
             </label>
@@ -242,10 +243,10 @@ loadDatasets()
               <div class="flex-1">
                 <div class="flex items-center gap-2">
                   <Copy class="h-4 w-4 text-blue-400" />
-                  <span class="text-gray-300 font-medium">Remove duplicates</span>
+                  <span class="text-gray-300 font-medium">{{ t('tools.objectExtraction.deduplicate') }}</span>
                 </div>
                 <p class="text-xs text-gray-500 mt-1">
-                  Skip objects that are visually similar to already extracted ones.
+                  {{ t('tools.objectExtraction.deduplicateDesc') }}
                 </p>
               </div>
             </label>
@@ -256,7 +257,7 @@ loadDatasets()
         <div class="p-4 bg-background-tertiary rounded-lg">
           <div class="flex items-center gap-2 mb-3">
             <Box class="h-4 w-4 text-green-400" />
-            <label class="text-sm text-gray-300 font-medium">Padding around objects</label>
+            <label class="text-sm text-gray-300 font-medium">{{ t('tools.objectExtraction.paddingLabel') }}</label>
           </div>
           <div class="flex items-center gap-4">
             <input
@@ -270,7 +271,7 @@ loadDatasets()
             <span class="text-white font-mono w-16 text-right">{{ padding }}px</span>
           </div>
           <p class="text-xs text-gray-500 mt-2">
-            Extra pixels to include around each object bounding box. Helps with edge artifacts.
+            {{ t('tools.objectExtraction.paddingDesc') }}
           </p>
         </div>
       </div>
@@ -278,7 +279,7 @@ loadDatasets()
 
     <!-- Progress -->
     <div v-if="currentJob" class="card p-6">
-      <h3 class="text-lg font-semibold text-white mb-4">Extraction Progress</h3>
+      <h3 class="text-lg font-semibold text-white mb-4">{{ t('tools.objectExtraction.progressTitle') }}</h3>
 
       <div class="flex items-center gap-4 mb-4">
         <component
@@ -290,9 +291,9 @@ loadDatasets()
         />
         <div class="flex-1">
           <p class="font-medium text-white">
-            {{ currentJob.status === 'running' ? 'Extracting...' : currentJob.status }}
+            {{ currentJob.status === 'running' ? t('tools.objectExtraction.extracting') : currentJob.status }}
           </p>
-          <p class="text-sm text-gray-400">Job ID: {{ currentJob.job_id.slice(0, 8) }}...</p>
+          <p class="text-sm text-gray-400">{{ t('tools.objectExtraction.jobIdLabel', { id: currentJob.job_id.slice(0, 8) }) }}...</p>
         </div>
         <span class="text-2xl font-bold text-primary">{{ currentJob.progress }}%</span>
       </div>
@@ -314,7 +315,7 @@ loadDatasets()
         size="lg"
       >
         <Scissors class="h-5 w-5" />
-        Start Extraction
+        {{ t('tools.objectExtraction.actions.startExtraction') }}
       </BaseButton>
     </div>
   </div>

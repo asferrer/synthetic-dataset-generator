@@ -94,7 +94,7 @@ async function startSplit() {
         val_ratio: valRatio.value / 100,
         test_ratio: testRatio.value / 100,
         stratified: stratified.value,
-        random_seed: randomSeed.value,
+        seed: randomSeed.value,
       })
       splitResult.value = result
       uiStore.showSuccess('Split Complete', 'Dataset split successfully')
@@ -112,7 +112,7 @@ async function startSplit() {
     }
   } catch (e: any) {
     error.value = e.message || 'Failed to split dataset'
-    uiStore.showError('Split Failed', error.value)
+    uiStore.showError('Split Failed', error.value ?? undefined)
   } finally {
     splitting.value = false
   }

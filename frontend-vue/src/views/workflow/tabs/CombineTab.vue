@@ -64,8 +64,8 @@ async function startCombine() {
 
   try {
     const result = await combineDatasets({
-      dataset_paths: selectedDatasets.value,
-      output_dir: outputDir.value,
+      datasets: selectedDatasets.value,
+      output_path: `${outputDir.value.replace(/[\/]+$/, '')}/combined.json`,
       merge_categories: mergeCategories.value,
       deduplicate: deduplicate.value,
     })
@@ -74,7 +74,7 @@ async function startCombine() {
     uiStore.showSuccess('Combine Complete', `Combined ${result.total_images} images into ${result.output_path}`)
   } catch (e: any) {
     error.value = e.message || 'Failed to combine datasets'
-    uiStore.showError('Combine Failed', error.value)
+    uiStore.showError('Combine Failed', error.value ?? undefined)
   } finally {
     combining.value = false
   }

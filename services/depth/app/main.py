@@ -3,20 +3,18 @@ Depth Service - FastAPI Application
 
 REST API for depth estimation using Depth-Anything-3.
 """
-import os
 import time
 import logging
 from pathlib import Path
-from typing import List
 from contextlib import asynccontextmanager
 
 import base64
 import cv2
 import numpy as np
-from fastapi import FastAPI, HTTPException, BackgroundTasks, File, UploadFile
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.depth_engine import get_depth_estimator, DepthEstimator
+from app.depth_engine import get_depth_estimator
 from app.models.schemas import (
     DepthEstimateRequest,
     DepthEstimateResponse,

@@ -10,10 +10,9 @@ Provides HDR-based multi-light source detection and realistic shadow generation:
 
 import numpy as np
 import cv2
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional
 from dataclasses import dataclass
 import logging
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -391,14 +390,8 @@ class AdvancedLightingEstimator:
         """
         Estimate HDR panorama from LDR image (experimental)
 
-        This is a placeholder for future integration with models like:
-        - 360U-Former (ViT-based HDR estimation)
-        - PanoDiT (Diffusion-based panorama generation)
-
-        For now, returns a simple equirectangular projection
+        No HDR model is used: returns a simple equirectangular projection of the image.
         """
-        # TODO: Integrate with 360U-Former or PanoDiT when available
-        # For now, create a simple panorama representation
 
         h, w = img.shape[:2]
         panorama_h = 256

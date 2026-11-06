@@ -8,7 +8,7 @@ import pytest
 from pathlib import Path
 
 # Services to test
-SERVICES = ["gateway", "depth", "segmentation", "effects", "augmentor", "frontend"]
+SERVICES = ["gateway", "depth", "segmentation", "augmentor", "domain_gap", "frontend"]
 
 # Path to docker-compose file
 COMPOSE_FILE = Path(__file__).parent.parent.parent / "docker-compose.microservices.yml"
@@ -57,7 +57,7 @@ class TestDockerBuild:
     def test_dockerfile_exists(self, service: str):
         """Verify Dockerfile exists for each service."""
         if service == "frontend":
-            dockerfile_path = COMPOSE_FILE.parent / "frontend" / "Dockerfile"
+            dockerfile_path = COMPOSE_FILE.parent / "frontend-vue" / "Dockerfile"
         else:
             dockerfile_path = COMPOSE_FILE.parent / "services" / service / "Dockerfile"
 

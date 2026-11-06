@@ -75,30 +75,25 @@ validation:
   reference_dataset_path: null     # Path to real images for comparison (if null, FID disabled)
 
 # File and directory paths
-# Rutas configuradas para Docker (montaje en /app/datasets/)
-# Estructura esperada: C:\Users\aleja\Desktop\RT-DETRv2-Densea\rtdetrv2_pytorch\dataset\
+# Paths configured for Docker (dataset mounted at /app/datasets/)
+# Expected layout of /path/to/dataset:
 #   ├── Backgrounds_filtered/   -> /app/datasets/Backgrounds_filtered
 #   └── Objects/       -> /app/datasets/Objects
 paths:
-  # Output directories (lectura/escritura)
+  # Output directories (read/write)
   images: "/app/output/synthetic_dataset/images"    # Output directory for augmented images
   labels: "/app/output/synthetic_dataset/labels"    # Output directory for generated annotations
 
-  # Input directories (solo lectura, montados desde Windows)
+  # Input directories (read-only, mounted from the host)
   objects_dataset: "/app/datasets/Objects"          # Path to objects dataset (masks)
   backgrounds_dataset: "/app/datasets/Backgrounds_filtered"  # Path to backgrounds dataset
 
-  # Rutas alternativas para ejecución local (sin Docker)
-  # Descomentar estas líneas si se ejecuta fuera de Docker:
+  # Alternative paths for local execution (without Docker):
+  # uncomment these lines when running outside Docker.
   # images: "synthetic_dataset/images"
   # labels: "synthetic_dataset/labels"
   # objects_dataset: "datasets/Objects"
   # backgrounds_dataset: "datasets/Backgrounds_filtered"
-
-# Streamlit configuration (for the interface)
-streamlit:
-  port: 8501                # Port where Streamlit application will run
-  debug: false              # Enable debug mode for Streamlit (optional)
 
 # Logging configuration (application level)
 logging:

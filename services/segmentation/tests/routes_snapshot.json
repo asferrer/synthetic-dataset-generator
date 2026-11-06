@@ -1,0 +1,546 @@
+{
+ "routes": [
+  {
+   "path": "/openapi.json",
+   "methods": [
+    "GET",
+    "HEAD"
+   ],
+   "name": "openapi",
+   "tags": []
+  },
+  {
+   "path": "/docs",
+   "methods": [
+    "GET",
+    "HEAD"
+   ],
+   "name": "swagger_ui_html",
+   "tags": []
+  },
+  {
+   "path": "/docs/oauth2-redirect",
+   "methods": [
+    "GET",
+    "HEAD"
+   ],
+   "name": "swagger_ui_redirect",
+   "tags": []
+  },
+  {
+   "path": "/redoc",
+   "methods": [
+    "GET",
+    "HEAD"
+   ],
+   "name": "redoc_html",
+   "tags": []
+  },
+  {
+   "path": "/health",
+   "methods": [
+    "GET"
+   ],
+   "name": "health_check",
+   "tags": [
+    "Health"
+   ]
+  },
+  {
+   "path": "/model-status",
+   "methods": [
+    "GET"
+   ],
+   "name": "model_status",
+   "tags": [
+    "Health"
+   ]
+  },
+  {
+   "path": "/analyze",
+   "methods": [
+    "POST"
+   ],
+   "name": "analyze_scene",
+   "tags": [
+    "Analysis"
+   ]
+  },
+  {
+   "path": "/check-compatibility",
+   "methods": [
+    "POST"
+   ],
+   "name": "check_compatibility",
+   "tags": [
+    "Analysis"
+   ]
+  },
+  {
+   "path": "/suggest-placement",
+   "methods": [
+    "POST"
+   ],
+   "name": "suggest_placement",
+   "tags": [
+    "Analysis"
+   ]
+  },
+  {
+   "path": "/segment-text",
+   "methods": [
+    "POST"
+   ],
+   "name": "segment_text",
+   "tags": [
+    "Segmentation"
+   ]
+  },
+  {
+   "path": "/debug/analyze",
+   "methods": [
+    "POST"
+   ],
+   "name": "debug_analyze_scene",
+   "tags": [
+    "Debug"
+   ]
+  },
+  {
+   "path": "/debug/compatibility",
+   "methods": [
+    "POST"
+   ],
+   "name": "debug_check_compatibility",
+   "tags": [
+    "Debug"
+   ]
+  },
+  {
+   "path": "/extract/analyze-dataset",
+   "methods": [
+    "POST"
+   ],
+   "name": "analyze_dataset_for_extraction",
+   "tags": [
+    "Object Extraction"
+   ]
+  },
+  {
+   "path": "/extract/objects",
+   "methods": [
+    "POST"
+   ],
+   "name": "extract_objects",
+   "tags": [
+    "Object Extraction"
+   ]
+  },
+  {
+   "path": "/extract/custom-objects",
+   "methods": [
+    "POST"
+   ],
+   "name": "extract_custom_objects",
+   "tags": [
+    "Object Extraction"
+   ]
+  },
+  {
+   "path": "/extract/jobs",
+   "methods": [
+    "GET"
+   ],
+   "name": "list_extraction_jobs",
+   "tags": [
+    "Object Extraction"
+   ]
+  },
+  {
+   "path": "/extract/jobs/{job_id}",
+   "methods": [
+    "GET"
+   ],
+   "name": "get_extraction_job_status",
+   "tags": [
+    "Object Extraction"
+   ]
+  },
+  {
+   "path": "/extract/single-object",
+   "methods": [
+    "POST"
+   ],
+   "name": "extract_single_object",
+   "tags": [
+    "Object Extraction"
+   ]
+  },
+  {
+   "path": "/extract/imagenet",
+   "methods": [
+    "POST"
+   ],
+   "name": "extract_from_imagenet",
+   "tags": [
+    "Object Extraction"
+   ]
+  },
+  {
+   "path": "/sam3/segment-image",
+   "methods": [
+    "POST"
+   ],
+   "name": "sam3_segment_image",
+   "tags": [
+    "SAM3 Tool"
+   ]
+  },
+  {
+   "path": "/sam3/convert-dataset",
+   "methods": [
+    "POST"
+   ],
+   "name": "sam3_convert_dataset",
+   "tags": [
+    "SAM3 Tool"
+   ]
+  },
+  {
+   "path": "/sam3/jobs",
+   "methods": [
+    "GET"
+   ],
+   "name": "list_sam3_conversion_jobs",
+   "tags": [
+    "SAM3 Tool"
+   ]
+  },
+  {
+   "path": "/sam3/jobs/{job_id}",
+   "methods": [
+    "GET"
+   ],
+   "name": "get_sam3_conversion_job_status",
+   "tags": [
+    "SAM3 Tool"
+   ]
+  },
+  {
+   "path": "/labeling/start",
+   "methods": [
+    "POST"
+   ],
+   "name": "start_labeling_job",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/relabel",
+   "methods": [
+    "POST"
+   ],
+   "name": "start_relabeling_job",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/jobs",
+   "methods": [
+    "GET"
+   ],
+   "name": "list_labeling_jobs",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/jobs/{job_id}",
+   "methods": [
+    "GET"
+   ],
+   "name": "get_labeling_job_status",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/jobs/{job_id}/result",
+   "methods": [
+    "GET"
+   ],
+   "name": "get_labeling_result",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/jobs/{job_id}/previews",
+   "methods": [
+    "GET"
+   ],
+   "name": "get_labeling_job_previews",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/jobs/{job_id}/resume",
+   "methods": [
+    "POST"
+   ],
+   "name": "resume_labeling_job",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/jobs/{job_id}",
+   "methods": [
+    "DELETE"
+   ],
+   "name": "cancel_labeling_job",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/jobs/{job_id}/delete",
+   "methods": [
+    "POST"
+   ],
+   "name": "delete_labeling_job",
+   "tags": [
+    "Labeling Tool"
+   ]
+  }
+ ],
+ "openapi_operations": [
+  {
+   "path": "/health",
+   "method": "GET",
+   "operation_id": "health_check_health_get",
+   "tags": [
+    "Health"
+   ]
+  },
+  {
+   "path": "/model-status",
+   "method": "GET",
+   "operation_id": "model_status_model_status_get",
+   "tags": [
+    "Health"
+   ]
+  },
+  {
+   "path": "/analyze",
+   "method": "POST",
+   "operation_id": "analyze_scene_analyze_post",
+   "tags": [
+    "Analysis"
+   ]
+  },
+  {
+   "path": "/check-compatibility",
+   "method": "POST",
+   "operation_id": "check_compatibility_check_compatibility_post",
+   "tags": [
+    "Analysis"
+   ]
+  },
+  {
+   "path": "/suggest-placement",
+   "method": "POST",
+   "operation_id": "suggest_placement_suggest_placement_post",
+   "tags": [
+    "Analysis"
+   ]
+  },
+  {
+   "path": "/segment-text",
+   "method": "POST",
+   "operation_id": "segment_text_segment_text_post",
+   "tags": [
+    "Segmentation"
+   ]
+  },
+  {
+   "path": "/debug/analyze",
+   "method": "POST",
+   "operation_id": "debug_analyze_scene_debug_analyze_post",
+   "tags": [
+    "Debug"
+   ]
+  },
+  {
+   "path": "/debug/compatibility",
+   "method": "POST",
+   "operation_id": "debug_check_compatibility_debug_compatibility_post",
+   "tags": [
+    "Debug"
+   ]
+  },
+  {
+   "path": "/extract/analyze-dataset",
+   "method": "POST",
+   "operation_id": "analyze_dataset_for_extraction_extract_analyze_dataset_post",
+   "tags": [
+    "Object Extraction"
+   ]
+  },
+  {
+   "path": "/extract/objects",
+   "method": "POST",
+   "operation_id": "extract_objects_extract_objects_post",
+   "tags": [
+    "Object Extraction"
+   ]
+  },
+  {
+   "path": "/extract/custom-objects",
+   "method": "POST",
+   "operation_id": "extract_custom_objects_extract_custom_objects_post",
+   "tags": [
+    "Object Extraction"
+   ]
+  },
+  {
+   "path": "/extract/jobs",
+   "method": "GET",
+   "operation_id": "list_extraction_jobs_extract_jobs_get",
+   "tags": [
+    "Object Extraction"
+   ]
+  },
+  {
+   "path": "/extract/jobs/{job_id}",
+   "method": "GET",
+   "operation_id": "get_extraction_job_status_extract_jobs__job_id__get",
+   "tags": [
+    "Object Extraction"
+   ]
+  },
+  {
+   "path": "/extract/single-object",
+   "method": "POST",
+   "operation_id": "extract_single_object_extract_single_object_post",
+   "tags": [
+    "Object Extraction"
+   ]
+  },
+  {
+   "path": "/extract/imagenet",
+   "method": "POST",
+   "operation_id": "extract_from_imagenet_extract_imagenet_post",
+   "tags": [
+    "Object Extraction"
+   ]
+  },
+  {
+   "path": "/sam3/segment-image",
+   "method": "POST",
+   "operation_id": "sam3_segment_image_sam3_segment_image_post",
+   "tags": [
+    "SAM3 Tool"
+   ]
+  },
+  {
+   "path": "/sam3/convert-dataset",
+   "method": "POST",
+   "operation_id": "sam3_convert_dataset_sam3_convert_dataset_post",
+   "tags": [
+    "SAM3 Tool"
+   ]
+  },
+  {
+   "path": "/sam3/jobs",
+   "method": "GET",
+   "operation_id": "list_sam3_conversion_jobs_sam3_jobs_get",
+   "tags": [
+    "SAM3 Tool"
+   ]
+  },
+  {
+   "path": "/sam3/jobs/{job_id}",
+   "method": "GET",
+   "operation_id": "get_sam3_conversion_job_status_sam3_jobs__job_id__get",
+   "tags": [
+    "SAM3 Tool"
+   ]
+  },
+  {
+   "path": "/labeling/start",
+   "method": "POST",
+   "operation_id": "start_labeling_job_labeling_start_post",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/relabel",
+   "method": "POST",
+   "operation_id": "start_relabeling_job_labeling_relabel_post",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/jobs",
+   "method": "GET",
+   "operation_id": "list_labeling_jobs_labeling_jobs_get",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/jobs/{job_id}",
+   "method": "GET",
+   "operation_id": "get_labeling_job_status_labeling_jobs__job_id__get",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/jobs/{job_id}",
+   "method": "DELETE",
+   "operation_id": "cancel_labeling_job_labeling_jobs__job_id__delete",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/jobs/{job_id}/result",
+   "method": "GET",
+   "operation_id": "get_labeling_result_labeling_jobs__job_id__result_get",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/jobs/{job_id}/previews",
+   "method": "GET",
+   "operation_id": "get_labeling_job_previews_labeling_jobs__job_id__previews_get",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/jobs/{job_id}/resume",
+   "method": "POST",
+   "operation_id": "resume_labeling_job_labeling_jobs__job_id__resume_post",
+   "tags": [
+    "Labeling Tool"
+   ]
+  },
+  {
+   "path": "/labeling/jobs/{job_id}/delete",
+   "method": "POST",
+   "operation_id": "delete_labeling_job_labeling_jobs__job_id__delete_post",
+   "tags": [
+    "Labeling Tool"
+   ]
+  }
+ ]
+}

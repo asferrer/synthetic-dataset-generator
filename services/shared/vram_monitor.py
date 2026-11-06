@@ -7,7 +7,7 @@ Triggers cleanup when usage exceeds threshold to prevent OOM errors.
 
 import gc
 import logging
-from typing import Dict, Optional
+from typing import Dict
 
 try:
     import torch

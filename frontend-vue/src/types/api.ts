@@ -319,6 +319,9 @@ export interface GenerationRequest {
   use_depth: boolean
   use_segmentation: boolean
   depth_aware_placement: boolean
+
+  // Buoyancy-aware object placement in compatible scene regions (root-level, not part of effects_config)
+  semantic_placement?: boolean
 }
 
 export interface GenerationResult {
@@ -428,13 +431,30 @@ export interface ExtractionRequest {
   deduplicate?: boolean
 }
 
-export interface ExtractionResult {
+export interface ExtractionStartResponse {
+  success: boolean
   job_id: string
   status: JobStatus
-  output_path?: string
-  objects_extracted: number
-  categories_processed: string[]
-  duration_seconds?: number
+  message: string
+  error?: string | null
+}
+
+export interface ExtractionJobStatus {
+  job_id: string
+  status: JobStatus
+  total_objects: number
+  extracted_objects: number
+  failed_objects: number
+  progress: number
+  current_category: string
+  categories_progress: Record<string, number>
+  output_dir: string
+  errors: string[]
+  processing_time_ms: number
+  started_at?: string | null
+  completed_at?: string | null
+  duplicates_prevented: number
+  deduplication_enabled: boolean
 }
 
 // ============================================

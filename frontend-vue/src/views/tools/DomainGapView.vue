@@ -450,10 +450,17 @@ const referenceSetOptions = computed(() =>
   })),
 )
 
+const diffusionSeed = computed({
+  get: () => diffusionConfig.seed ?? '',
+  set: (val: string | number) => {
+    diffusionConfig.seed = typeof val === 'number' ? val : null
+  },
+})
+
 const randReferenceSetId = computed({
-  get: () => randConfig.reference_set_id ?? '',
+  get: () => randConfig.value.reference_set_id ?? '',
   set: (val: string) => {
-    randConfig.reference_set_id = val === '' ? null : val
+    randConfig.value.reference_set_id = val === '' ? null : val
   },
 })
 
@@ -1365,7 +1372,7 @@ onUnmounted(() => {
           <!-- Seed -->
           <div>
             <BaseInput
-              v-model.number="diffusionConfig.seed"
+              v-model="diffusionSeed"
               :label="t('tools.domainGap.diffusion.params.seed')"
               type="number"
               :placeholder="t('tools.domainGap.diffusion.params.seedPlaceholder')"

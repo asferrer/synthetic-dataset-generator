@@ -36,7 +36,6 @@ class TestEnums:
     def test_dgr_technique_values(self):
         assert DGRTechnique.DOMAIN_RANDOMIZATION.value == "domain_randomization"
         assert DGRTechnique.STYLE_TRANSFER.value == "neural_style_transfer"
-        assert DGRTechnique.CYCLEGAN.value == "cyclegan_translation"
 
     def test_gap_level_values(self):
         assert GapLevel.LOW.value == "low"
@@ -83,8 +82,8 @@ class TestMetricsRequest:
             reference_set_id="abc123",
         )
         assert req.max_images == 100
-        assert req.compute_fid is True
-        assert req.compute_kid is True
+        assert req.compute_fid is False  # legacy FID and KID are opt-in
+        assert req.compute_kid is False
         assert req.compute_color_distribution is True
 
     def test_custom_values(self):
@@ -214,7 +213,7 @@ class TestAnalyzeRequest:
             synthetic_dir="/syn",
             reference_set_id="ref1",
         )
-        assert req.max_images == 50
+        assert req.max_images == 100
         assert req.current_config is None
 
     def test_with_config(self):

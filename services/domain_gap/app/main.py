@@ -30,7 +30,7 @@ import tempfile
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from contextlib import asynccontextmanager
 
 import torch
@@ -42,54 +42,7 @@ from loguru import logger
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from shared.job_database import JobDatabase, get_job_db
 
-from app.models.schemas import (
-    # Reference
-    ReferenceUploadResponse,
-    ReferenceListResponse,
-    ReferenceImageSet,
-    ReferenceCreateResponse,
-    ReferenceBatchResponse,
-    ReferenceFinalizeResponse,
-    ReferenceFromDirectoryRequest,
-    # Metrics
-    MetricsRequest,
-    MetricsResult,
-    MetricsCompareRequest,
-    MetricsCompareResponse,
-    # Analysis
-    AnalyzeRequest,
-    GapAnalysis,
-    # Randomization
-    RandomizationApplyRequest,
-    RandomizationBatchRequest,
-    RandomizationResponse,
-    # Style Transfer
-    StyleTransferApplyRequest,
-    StyleTransferBatchRequest,
-    StyleTransferResponse,
-    # Optimization
-    OptimizeRequest,
-    # Jobs
-    JobStatusResponse,
-    JobListResponse,
-    # System
-    HealthResponse,
-    InfoResponse,
-    DGRTechnique,
-    # Diffusion Refinement
-    DiffusionMethod,
-    DiffusionRefinementConfig,
-    DiffusionRefinementRequest,
-    DiffusionRefinementResponse,
-    DiffusionBatchRequest,
-    AnnotationPreservationMetrics,
-    LoRATrainingConfig,
-    LoRATrainingResponse,
-    LoRAModelInfo,
-    LoRAModelsResponse,
-    AnnotationValidationRequest,
-    AnnotationValidationResponse,
-)
+from app.models.schemas import ReferenceUploadResponse, ReferenceListResponse, ReferenceImageSet, ReferenceCreateResponse, ReferenceBatchResponse, ReferenceFinalizeResponse, ReferenceFromDirectoryRequest, MetricsRequest, MetricsResult, MetricsCompareRequest, MetricsCompareResponse, AnalyzeRequest, GapAnalysis, RandomizationApplyRequest, RandomizationBatchRequest, RandomizationResponse, StyleTransferApplyRequest, StyleTransferBatchRequest, StyleTransferResponse, OptimizeRequest, JobStatusResponse, HealthResponse, InfoResponse, DGRTechnique, DiffusionRefinementRequest, DiffusionRefinementResponse, DiffusionBatchRequest, AnnotationPreservationMetrics, LoRATrainingConfig, LoRAModelInfo, LoRAModelsResponse, AnnotationValidationRequest, AnnotationValidationResponse
 
 # Import routers
 from app.routers import ml_optimizer

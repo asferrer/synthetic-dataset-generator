@@ -8,7 +8,7 @@ Proxies requests to the Augmentor service.
 import logging
 import os
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from enum import Enum
 
@@ -43,16 +43,17 @@ class WaterClarity(str, Enum):
 
 
 class EffectsConfig(BaseModel):
-    """Effects configuration (BUG #11 FIX - harmonized with Augmentor defaults)"""
-    color_intensity: float = Field(0.12, ge=0, le=1, description="Color correction intensity (0.1-0.15 recommended)")
-    blur_strength: float = Field(0.5, ge=0, le=3, description="Blur matching strength")
-    underwater_intensity: float = Field(0.15, ge=0, le=1, description="Underwater tint intensity")
-    caustics_intensity: float = Field(0.10, ge=0, le=0.5, description="Caustics effect intensity")
-    shadow_opacity: float = Field(0.10, ge=0, le=1, description="Shadow darkness")
+    """Effects configuration. Defaults from parameter study round 2 (Apr 2026)."""
+    color_intensity: float = Field(0.25, ge=0, le=1, description="Color correction intensity (LAB Reinhard transfer)")
+    blur_strength: float = Field(0.65, ge=0, le=3, description="Blur matching strength")
+    underwater_intensity: float = Field(0.33, ge=0, le=1, description="Underwater tint intensity (0.28-0.35 optimal)")
+    caustics_intensity: float = Field(0.12, ge=0, le=0.5, description="Caustics effect intensity")
+    shadow_opacity: float = Field(0.12, ge=0, le=1, description="Shadow darkness")
     lighting_type: str = Field("ambient", description="spotlight|gradient|ambient")
     lighting_intensity: float = Field(0.5, ge=0, le=1, description="Lighting effect intensity")
     motion_blur_probability: float = Field(0.2, ge=0, le=1, description="Probability of motion blur")
     water_clarity: WaterClarity = Field(WaterClarity.CLEAR, description="Water clarity level")
+    water_color: Optional[tuple] = Field((180, 120, 30), description="BGR water tint. (180,120,30)=ocean blue-green")
 
 
 class ObjectPlacement(BaseModel):
@@ -146,10 +147,19 @@ class ComposeBatchRequest(BaseModel):
     targets_per_class: Optional[Dict[str, int]] = Field(None)
     max_objects_per_image: int = Field(5, ge=1, le=20)
     effects: List[EffectType] = Field(
-        default=[EffectType.COLOR_CORRECTION, EffectType.BLUR_MATCHING, EffectType.CAUSTICS]
+        default=[
+            EffectType.COLOR_CORRECTION,
+            EffectType.BLUR_MATCHING,
+            EffectType.UNDERWATER,
+            EffectType.CAUSTICS,
+            EffectType.SHADOWS,
+            EffectType.EDGE_SMOOTHING,
+        ],
+        description="Effects to apply. Default tuned for underwater realism (parameter studies Apr 2026). UNDERWATER for tone integration, EDGE_SMOOTHING for natural object borders.",
     )
     effects_config: Optional[Any] = Field(default=None, description="Effects config (flat or nested)")
     depth_aware: bool = Field(True)
+    semantic_placement: bool = Field(True, description="Buoyancy-aware placement in compatible scene regions")
     validate_quality: bool = Field(False)
     validate_physics: bool = Field(False)
     reject_invalid: bool = Field(True)
@@ -284,6 +294,49 @@ async def compose_image(request: ComposeRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Flat keys accepted by the augmentor EffectsConfig. Defaults live ONLY in
+# the augmentor schema — the gateway must never re-declare them.
+_EFFECTS_FLAT_KEYS = {
+    "color_intensity", "blur_strength", "underwater_intensity",
+    "caustics_intensity", "shadow_opacity", "lighting_type",
+    "lighting_intensity", "motion_blur_probability", "motion_blur_kernel",
+    "shadow_blur", "edge_feather", "water_color", "water_clarity",
+    "validate_identity", "max_color_shift", "min_sharpness_ratio",
+    "min_contrast_ratio", "use_binary_alpha", "alpha_feather_radius",
+    "max_blur_budget", "min_object_size_ratio", "absolute_min_size",
+    "caustics_deterministic", "recalculate_bbox_after_global",
+    "underwater_physical", "caustics_depth_aware", "depth_occlusion",
+}
+
+# Frontend nested sections mapped to the flat keys they may carry
+_EFFECTS_NESTED_MAP = {
+    "color_correction": ("color_intensity",),
+    "blur_matching": ("blur_strength", "max_blur_budget"),
+    "underwater": ("underwater_intensity", "water_clarity", "water_color", "underwater_physical"),
+    "caustics": ("caustics_intensity", "caustics_deterministic", "caustics_depth_aware"),
+    "depth_occlusion": ("depth_occlusion",),
+    "shadows": ("shadow_opacity", "shadow_blur"),
+    "lighting": ("lighting_type", "lighting_intensity"),
+    "motion_blur": ("motion_blur_probability", "motion_blur_kernel"),
+    "edge_smoothing": ("edge_feather",),
+}
+
+
+def _flatten_effects_config(ec) -> dict:
+    """Flatten frontend effects_config (nested, flat or mixed) copying ONLY
+    the keys present in the request, so augmentor defaults stay authoritative."""
+    if not isinstance(ec, dict):
+        return {}
+    flat = {k: v for k, v in ec.items() if k in _EFFECTS_FLAT_KEYS}
+    for section, keys in _EFFECTS_NESTED_MAP.items():
+        sec = ec.get(section)
+        if isinstance(sec, dict):
+            for key in keys:
+                if key in sec:
+                    flat[key] = sec[key]
+    return flat
+
+
 @router.post("/compose-batch", response_model=ComposeBatchResponse)
 async def compose_batch(request: ComposeBatchRequest):
     """
@@ -346,43 +399,24 @@ async def compose_batch(request: ComposeBatchRequest):
         validate_physics = request.validation_config.get("validate_physics", validate_physics)
         reject_invalid = request.validation_config.get("reject_invalid", reject_invalid)
 
-    # Resolve batch config
+    # Resolve batch config — forward only explicitly provided keys so the
+    # augmentor schema defaults apply otherwise
     save_pipeline_debug = request.save_pipeline_debug
-    parallel = True
-    concurrent_limit = 4
-    vram_threshold = 0.7
+    batch_overrides = {}
     if request.batch_config:
         save_pipeline_debug = request.batch_config.get("save_pipeline_debug", save_pipeline_debug)
-        parallel = request.batch_config.get("parallel", parallel)
-        concurrent_limit = request.batch_config.get("concurrent_limit", concurrent_limit)
-        vram_threshold = request.batch_config.get("vram_threshold", vram_threshold)
+        for key in ("parallel", "concurrent_limit", "vram_threshold"):
+            if key in request.batch_config:
+                batch_overrides[key] = request.batch_config[key]
 
     # Resolve max_objects_per_image from placement_config
     max_objects = request.max_objects_per_image
     if request.placement_config:
         max_objects = request.placement_config.get("max_objects_per_image", max_objects)
 
-    # Transform effects_config from frontend nested format to flat augmentor format
-    effects_config = {}
-    ec = request.effects_config
-    if isinstance(ec, dict):
-        # Frontend sends nested format with color_correction.enabled, etc.
-        effects_config = {
-            "color_intensity": ec.get("color_correction", {}).get("color_intensity", 0.12) if isinstance(ec.get("color_correction"), dict) else 0.12,
-            "blur_strength": ec.get("blur_matching", {}).get("blur_strength", 0.5) if isinstance(ec.get("blur_matching"), dict) else 0.5,
-            "underwater_intensity": ec.get("underwater", {}).get("underwater_intensity", 0.15) if isinstance(ec.get("underwater"), dict) else 0.15,
-            "caustics_intensity": ec.get("caustics", {}).get("caustics_intensity", 0.10) if isinstance(ec.get("caustics"), dict) else 0.10,
-            "shadow_opacity": ec.get("shadows", {}).get("shadow_opacity", 0.10) if isinstance(ec.get("shadows"), dict) else 0.10,
-            "lighting_type": ec.get("lighting", {}).get("lighting_type", "ambient") if isinstance(ec.get("lighting"), dict) else "ambient",
-            "lighting_intensity": ec.get("lighting", {}).get("lighting_intensity", 0.5) if isinstance(ec.get("lighting"), dict) else 0.5,
-            "motion_blur_probability": ec.get("motion_blur", {}).get("motion_blur_probability", 0.2) if isinstance(ec.get("motion_blur"), dict) else 0.2,
-            "water_clarity": ec.get("underwater", {}).get("water_clarity", "clear") if isinstance(ec.get("underwater"), dict) else "clear",
-        }
-        # If it already has flat keys (legacy format), pass through
-        if "color_intensity" in ec:
-            effects_config = ec
-    elif ec is None:
-        effects_config = {}
+    # Flatten effects_config copying ONLY keys present in the request —
+    # defaults live exclusively in the augmentor schema
+    effects_config = _flatten_effects_config(request.effects_config)
 
     # Build enabled effects list from nested config
     effects_list = [e.value if hasattr(e, 'value') else e for e in request.effects]
@@ -403,9 +437,6 @@ async def compose_batch(request: ComposeBatchRequest):
             section = request.effects_config.get(key, {})
             if isinstance(section, dict) and section.get("enabled", False):
                 effects_list.append(effect_name)
-        # Ensure at least basic effects
-        if not effects_list:
-            effects_list = ["color_correction", "blur_matching", "caustics"]
 
     # Build the augmentor-compatible request
     request_data = {
@@ -418,13 +449,12 @@ async def compose_batch(request: ComposeBatchRequest):
         "effects": effects_list,
         "effects_config": effects_config,
         "depth_aware": depth_aware,
+        "semantic_placement": request.semantic_placement,
         "validate_quality": validate_quality,
         "validate_physics": validate_physics,
         "reject_invalid": reject_invalid,
         "save_pipeline_debug": save_pipeline_debug,
-        "parallel": parallel,
-        "concurrent_limit": concurrent_limit,
-        "vram_threshold": vram_threshold,
+        **batch_overrides,
     }
 
     # Add metadata if present

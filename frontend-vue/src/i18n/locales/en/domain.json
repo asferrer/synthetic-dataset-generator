@@ -9,6 +9,42 @@
     "noDomains": "No domains found",
     "confirmDelete": "Are you sure you want to delete domain \"{name}\"? This action cannot be undone.",
     "cannotEditBuiltIn": "Cannot edit built-in domains",
+    "activeDomainLabel": "Active Domain",
+    "configure": "Configure",
+    "builtInTitle": "Built-in Domains",
+    "customTitle": "Custom Domains",
+    "view": "View",
+    "regionsCount": "{count} regions",
+    "objectsCount": "{count} objects",
+    "createModal": {
+      "title": "Create New Domain",
+      "domainId": "Domain ID",
+      "domainIdPlaceholder": "e.g., my_custom_domain",
+      "domainIdHint": "Lowercase letters, numbers, and underscores only",
+      "name": "Name",
+      "namePlaceholder": "e.g., My Custom Domain",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe your domain...",
+      "icon": "Icon",
+      "cancel": "Cancel",
+      "create": "Create Domain"
+    },
+    "importModal": {
+      "title": "Import Domain",
+      "jsonLabel": "Domain JSON",
+      "jsonPlaceholder": "Paste your domain JSON here...",
+      "cancel": "Cancel",
+      "import": "Import"
+    },
+    "deleteModal": {
+      "title": "Delete Domain",
+      "cancel": "Cancel",
+      "delete": "Delete"
+    },
+    "errors": {
+      "idNameRequired": "Domain ID and name are required",
+      "invalidJson": "Invalid JSON format"
+    },
     "actions": {
       "activate": "Activate",
       "edit": "Edit",

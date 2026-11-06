@@ -156,6 +156,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const useDepth = ref(true)
   const useSegmentation = ref(true)
   const depthAwarePlacement = ref(true)
+  const semanticPlacement = ref(true)
 
   // Active job
   const activeJobId = ref<string | null>(null)
@@ -369,6 +370,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
     depthAwarePlacement.value = value
   }
 
+  function setSemanticPlacement(value: boolean) {
+    semanticPlacement.value = value
+  }
+
   // Active job
   function setActiveJobId(jobId: string | null) {
     activeJobId.value = jobId
@@ -396,6 +401,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     useDepth.value = true
     useSegmentation.value = true
     depthAwarePlacement.value = true
+    semanticPlacement.value = true
     activeJobId.value = null
     autoTuneEnabled.value = false
     autoTuneJobId.value = null
@@ -448,6 +454,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     useDepth,
     useSegmentation,
     depthAwarePlacement,
+    semanticPlacement,
     activeJobId,
     autoTuneEnabled,
     autoTuneJobId,
@@ -490,6 +497,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     setUseDepth,
     setUseSegmentation,
     setDepthAwarePlacement,
+    setSemanticPlacement,
     setActiveJobId,
     resetWorkflow,
     resetEffectsConfig,

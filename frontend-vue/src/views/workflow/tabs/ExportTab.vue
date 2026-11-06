@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useWorkflowStore } from '@/stores/workflow'
 import { useUiStore } from '@/stores/ui'
 import { exportDataset, listDatasets, analyzeDataset } from '@/lib/api'
@@ -19,6 +20,7 @@ import type { ExportFormat, DatasetInfo, DatasetAnalysis, ExportResult } from '@
 
 const workflowStore = useWorkflowStore()
 const uiStore = useUiStore()
+const { t } = useI18n()
 
 const loading = ref(false)
 const exporting = ref(false)
@@ -44,11 +46,11 @@ const formatIcons: Record<string, any> = {
   voc: Database,
 }
 
-const formatDescriptions: Record<string, string> = {
-  yolo: 'Normalized bbox coordinates in TXT files. Creates data.yaml for Ultralytics training.',
-  voc: 'XML annotation files per image. Compatible with Pascal VOC format tools.',
-  coco: 'Standard COCO format JSON. Copy with optional images.',
-}
+const formatDescriptions = computed<Record<string, string>>(() => ({
+  yolo: t('workflow.export.formatDescriptions.yolo'),
+  voc: t('workflow.export.formatDescriptions.voc'),
+  coco: t('workflow.export.formatDescriptions.coco'),
+}))
 
 async function loadDatasets() {
   loading.value = true
@@ -92,12 +94,12 @@ const datasetOptions = computed(() =>
 
 async function startExport() {
   if (!selectedDataset.value) {
-    uiStore.showError('Missing Dataset', 'Please select a dataset to export')
+    uiStore.showError(t('workflow.export.errors.missingDataset'), t('workflow.export.errors.missingDatasetMsg'))
     return
   }
 
   if (!selectedImagesDir.value) {
-    uiStore.showError('Missing Images Directory', 'Please specify the images directory')
+    uiStore.showError(t('workflow.export.errors.missingImagesDir'), t('workflow.export.errors.missingImagesDirMsg'))
     return
   }
 
@@ -116,10 +118,10 @@ async function startExport() {
 
     exportResult.value = result
     workflowStore.markStepCompleted(4)
-    uiStore.showSuccess('Export Complete', `Dataset exported to ${result.output_dir}`)
+    uiStore.showSuccess(t('workflow.export.notifications.completed'), t('workflow.export.resultMsg', { format: result.format.toUpperCase() }))
   } catch (e: any) {
-    error.value = e.message || 'Failed to export dataset'
-    uiStore.showError('Export Failed', error.value)
+    error.value = e.message || t('workflow.export.errors.exportFailedMsg')
+    uiStore.showError(t('workflow.export.notifications.failed'), error.value ?? undefined)
   } finally {
     exporting.value = false
   }
@@ -138,23 +140,23 @@ loadDatasets()
     <div class="grid gap-6 lg:grid-cols-2">
       <!-- Dataset Selection -->
       <div class="card p-6">
-        <h3 class="text-lg font-semibold text-white mb-4">Select Dataset</h3>
+        <h3 class="text-lg font-semibold text-white mb-4">{{ t('workflow.export.selectDataset') }}</h3>
 
         <div v-if="loading && datasets.length === 0" class="flex justify-center py-8">
-          <LoadingSpinner message="Loading datasets..." />
+          <LoadingSpinner :message="t('common.status.loading')" />
         </div>
 
         <div v-else class="space-y-4">
           <BaseSelect
             v-model="selectedDataset"
             :options="datasetOptions"
-            label="Dataset (COCO JSON)"
-            placeholder="Choose a dataset to export..."
+            :label="t('workflow.export.datasetLabel')"
+            :placeholder="t('workflow.export.datasetPlaceholder')"
           />
 
           <DirectoryBrowser
             v-model="selectedImagesDir"
-            label="Images Directory"
+            :label="t('workflow.export.imagesDirectoryLabel')"
             placeholder="/app/datasets/images"
             path-mode="input"
           />
@@ -162,9 +164,11 @@ loadDatasets()
           <!-- Dataset Info -->
           <div v-if="datasetAnalysis" class="mt-4 p-4 bg-background-tertiary rounded-lg">
             <p class="text-sm text-gray-400">
-              <span class="text-white font-medium">{{ datasetAnalysis.total_images }}</span> images,
-              <span class="text-white font-medium">{{ datasetAnalysis.total_annotations }}</span> annotations,
-              <span class="text-white font-medium">{{ datasetAnalysis.categories.length }}</span> categories
+              {{ t('workflow.export.datasetInfo', {
+                images: datasetAnalysis.total_images,
+                annotations: datasetAnalysis.total_annotations,
+                categories: datasetAnalysis.categories.length,
+              }) }}
             </p>
           </div>
         </div>
@@ -172,18 +176,18 @@ loadDatasets()
 
       <!-- Export Options -->
       <div class="card p-6">
-        <h3 class="text-lg font-semibold text-white mb-4">Export Options</h3>
+        <h3 class="text-lg font-semibold text-white mb-4">{{ t('workflow.export.optionsTitle') }}</h3>
 
         <div class="space-y-4">
           <BaseSelect
             v-model="exportFormat"
             :options="formatOptions"
-            label="Export Format"
+            :label="t('workflow.export.exportFormatLabel')"
           />
 
           <DirectoryBrowser
             v-model="outputDir"
-            label="Output Directory"
+            :label="t('workflow.export.outputDirLabel')"
             placeholder="/app/output/exports"
             path-mode="output"
           />
@@ -194,7 +198,7 @@ loadDatasets()
               v-model="includeImages"
               class="h-5 w-5 rounded border-gray-600 bg-background-tertiary text-primary focus:ring-primary"
             />
-            <span class="text-gray-300">Include images in export</span>
+            <span class="text-gray-300">{{ t('workflow.export.includeImages') }}</span>
           </label>
         </div>
       </div>
@@ -202,7 +206,7 @@ loadDatasets()
 
     <!-- Format Information -->
     <div class="card p-6">
-      <h3 class="text-lg font-semibold text-white mb-4">Format Details</h3>
+      <h3 class="text-lg font-semibold text-white mb-4">{{ t('workflow.export.formatDetailsTitle') }}</h3>
       <div class="grid gap-4 sm:grid-cols-3">
         <div
           v-for="format in formatOptions"
@@ -231,36 +235,36 @@ loadDatasets()
       <div class="flex items-center gap-4 mb-4">
         <CheckCircle class="h-8 w-8 text-green-400" />
         <div>
-          <h3 class="text-lg font-semibold text-white">Export Complete</h3>
-          <p class="text-gray-400">Dataset successfully exported to {{ exportResult.format.toUpperCase() }} format</p>
+          <h3 class="text-lg font-semibold text-white">{{ t('workflow.export.resultTitle') }}</h3>
+          <p class="text-gray-400">{{ t('workflow.export.resultMsg', { format: exportResult.format.toUpperCase() }) }}</p>
         </div>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-3 mt-4">
         <div class="p-4 bg-background-tertiary rounded-lg text-center">
           <p class="text-2xl font-bold text-primary">{{ exportResult.images_exported }}</p>
-          <p class="text-sm text-gray-400">Images Exported</p>
+          <p class="text-sm text-gray-400">{{ t('workflow.export.imagesExported') }}</p>
         </div>
         <div class="p-4 bg-background-tertiary rounded-lg text-center">
           <p class="text-2xl font-bold text-primary">{{ exportResult.annotations_exported }}</p>
-          <p class="text-sm text-gray-400">Annotations</p>
+          <p class="text-sm text-gray-400">{{ t('workflow.export.annotationsExported') }}</p>
         </div>
         <div class="p-4 bg-background-tertiary rounded-lg text-center">
           <p class="text-lg font-medium text-white truncate" :title="exportResult.output_dir">
             {{ exportResult.output_dir.split('/').pop() }}
           </p>
-          <p class="text-sm text-gray-400">Output Directory</p>
+          <p class="text-sm text-gray-400">{{ t('workflow.export.outputDirLabel') }}</p>
         </div>
       </div>
 
       <!-- YOLO-specific info -->
       <div v-if="exportResult.yaml_file" class="mt-4 p-4 bg-green-900/20 border border-green-700/50 rounded-lg">
         <p class="text-sm text-gray-300">
-          <span class="text-green-400 font-medium">YOLO Config:</span>
+          <span class="text-green-400 font-medium">{{ t('workflow.export.yoloConfigLabel') }}</span>
           {{ exportResult.yaml_file }}
         </p>
         <p class="text-sm text-gray-400 mt-1">
-          Use this data.yaml file to train with Ultralytics YOLO.
+          {{ t('workflow.export.yoloConfigHint') }}
         </p>
       </div>
     </div>
@@ -274,7 +278,7 @@ loadDatasets()
         @click="startExport"
       >
         <Download class="h-5 w-5" />
-        Export Dataset
+        {{ t('workflow.export.actions.export') }}
       </BaseButton>
     </div>
   </div>

@@ -7,7 +7,6 @@ detection precision and reduce false positives.
 """
 
 from typing import List, Dict, Optional, Tuple
-import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)

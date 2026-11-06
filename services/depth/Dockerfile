@@ -44,7 +44,7 @@ RUN git clone --depth 1 https://github.com/ByteDance-Seed/Depth-Anything-3.git
 RUN python -m pip install --ignore-installed blinker
 
 # Install PyTorch with CUDA 12.8 support
-# Instalamos numpy antes para asegurar compatibilidad
+# Install numpy first to ensure compatibility
 RUN python -m pip install --no-cache-dir numpy
 
 RUN python -m pip install --no-cache-dir \

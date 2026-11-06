@@ -10,7 +10,7 @@ import sys
 import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from shared.job_database import JobDatabase, get_job_db
+from shared.job_database import JobDatabase
 
 import json
 import shutil

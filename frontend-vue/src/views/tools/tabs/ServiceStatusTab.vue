@@ -27,7 +27,6 @@ const serviceInfo: Record<string, { description: string; port: number }> = {
   gateway: { description: 'Main API router and orchestrator', port: 8000 },
   depth: { description: 'Depth estimation for realistic placement', port: 8001 },
   segmentation: { description: 'SAM-based object segmentation', port: 8002 },
-  effects: { description: 'Image augmentation and effects', port: 8003 },
   augmentor: { description: 'Dataset augmentation pipeline', port: 8004 },
 }
 

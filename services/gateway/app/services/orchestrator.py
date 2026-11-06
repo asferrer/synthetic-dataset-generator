@@ -4,7 +4,6 @@ Pipeline Orchestrator
 Coordinates the synthetic data generation pipeline by calling
 the appropriate services in sequence.
 """
-import os
 import time
 import logging
 import uuid
@@ -12,12 +11,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 from app.services.client import get_service_registry
-from app.models.schemas import (
-    GenerationConfig,
-    ObjectInfo,
-    AnnotationBox,
-    EffectType
-)
+from app.models.schemas import GenerationConfig, ObjectInfo, AnnotationBox
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +35,7 @@ class PipelineOrchestrator:
 
         Pipeline:
         1. Depth estimation on background (if depth_aware)
-        2. Apply effects to result
-        3. Generate annotations
+        2. Generate annotations
 
         Args:
             background_path: Path to background image
@@ -101,35 +94,7 @@ class PipelineOrchestrator:
                 except Exception as e:
                     logger.warning(f"Depth service error: {e}. Continuing without depth.")
 
-            # Step 2: Apply effects
-            effects_to_apply = [e.value for e in config.effects]
-            effects_applied = []
-
-            try:
-                effects_result = await self.registry.effects.post("/apply", {
-                    "background_path": background_path,
-                    "depth_map_path": depth_map_path,
-                    "output_path": output_path,
-                    "effects": effects_to_apply,
-                    "config": {
-                        "color_intensity": config.color_intensity,
-                        "underwater_intensity": config.underwater_intensity,
-                        "caustics_intensity": config.caustics_intensity
-                    }
-                })
-
-                if effects_result.get("success"):
-                    effects_applied = effects_result.get("effects_applied", [])
-                    result["effects_applied"] = effects_applied
-                    result["output_path"] = effects_result.get("output_path", output_path)
-                    logger.info(f"Effects applied: {effects_applied}")
-                else:
-                    logger.warning(f"Effects failed: {effects_result.get('error')}")
-
-            except Exception as e:
-                logger.warning(f"Effects service error: {e}")
-
-            # Step 3: Generate annotations for placed objects
+            # Step 2: Generate annotations for placed objects
             annotations = []
             for i, obj in enumerate(objects):
                 # In a full implementation, this would track actual placement positions

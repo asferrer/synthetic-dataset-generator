@@ -5,7 +5,7 @@ REST API endpoints for managing domain configurations.
 """
 
 import logging
-from typing import List, Optional, Any
+from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 

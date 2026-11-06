@@ -37,7 +37,6 @@ class TestGatewayAPI:
         # Check expected services are listed
         services = data["available_services"]
         assert "depth" in services
-        assert "effects" in services
         assert "augmentor" in services
 
     def test_health_endpoint_structure(self, docker_services, gateway_url):
@@ -57,15 +56,6 @@ class TestGatewayAPI:
 
         data = response.json()
         assert data["service"] == "depth"
-        assert "health" in data
-
-    def test_effects_service_info(self, docker_services, gateway_url):
-        """Test GET /services/effects endpoint."""
-        response = requests.get(f"{gateway_url}/services/effects", timeout=30)
-        assert response.status_code == 200
-
-        data = response.json()
-        assert data["service"] == "effects"
         assert "health" in data
 
     def test_augmentor_service_info(self, docker_services, gateway_url):

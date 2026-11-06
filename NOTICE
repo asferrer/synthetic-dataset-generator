@@ -1,0 +1,18 @@
+Synthetic Dataset Generator
+Copyright 2025-2026 Alejandro Sánchez Ferrer
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party models and software used at run time (none of their weights or source code is redistributed here;
+they are downloaded by the services from their original sources, each under its own license):
+
+- SAM 3 (Meta, `facebook/sam3`): SAM License. Gated model; access must be requested on Hugging Face.
+- Depth Anything 3 (ByteDance): DA3-SMALL and DA3-BASE are Apache-2.0; DA3-LARGE and DA3-GIANT are CC BY-NC 4.0.
+  The default model is DA3-BASE.
+- Stable Diffusion 1.5, ControlNet (`lllyasviel/control_v11f1p_sd15_depth`) and IP-Adapter (`h94/IP-Adapter`),
+  used by the optional diffusion refinement engine of the domain-gap service: Stable Diffusion 1.5 and ControlNet
+  are distributed under the CreativeML Open RAIL-M license, IP-Adapter under Apache-2.0; check the model cards.
+- LPIPS (Zhang et al.): BSD-2-Clause.
+- pymatting (optional edge matting): MIT.
+- FastAPI, Uvicorn, Pydantic, OpenCV, NumPy, SciPy, scikit-image, scikit-learn, PyTorch: their respective
+  open-source licenses.

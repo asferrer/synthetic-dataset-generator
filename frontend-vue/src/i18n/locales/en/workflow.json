@@ -108,6 +108,137 @@
       "targetScore": "Target Gap Score",
       "maxIterations": "Max Iterations",
       "probeSize": "Probe Batch Size"
+    },
+    "effectsPanel": {
+      "resetAll": "Reset All",
+      "presetsTitle": "Quick Presets",
+      "presetsSubtitle": "Select a preset or create your own configuration",
+      "saveCurrent": "Save Current",
+      "savedPresetsLabel": "Your Saved Presets:",
+      "saveModal": {
+        "title": "Save Current Configuration",
+        "nameLabel": "Preset Name",
+        "namePlaceholder": "My Custom Preset",
+        "cancel": "Cancel",
+        "save": "Save Preset"
+      },
+      "presets": {
+        "underwater": { "name": "Underwater Marine", "description": "Optimized for underwater datasets with caustics and color tinting" },
+        "urban": { "name": "Urban Street", "description": "For street scenes, traffic, and urban environments" },
+        "minimal": { "name": "Minimal", "description": "Light augmentation for subtle variations" },
+        "aggressive": { "name": "Aggressive", "description": "Heavy augmentation for maximum variety" }
+      },
+      "notifications": {
+        "presetApplied": "Preset Applied",
+        "presetAppliedMsg": "Applied \"{name}\" preset",
+        "nameRequired": "Name Required",
+        "nameRequiredMsg": "Please enter a name for the preset",
+        "presetSaved": "Preset Saved",
+        "presetSavedMsg": "Saved \"{name}\" preset",
+        "presetDeleted": "Preset Deleted",
+        "presetDeletedMsg": "Custom preset has been deleted",
+        "configSaved": "Configuration Saved",
+        "configSavedMsg": "Effects and placement configuration has been saved",
+        "configReset": "Configuration Reset",
+        "configResetMsg": "All configurations have been reset to defaults",
+        "validationError": "Validation Errors",
+        "validationErrorMsg": "Fix the minimum/maximum values before continuing"
+      },
+      "tabs": {
+        "basic": "Basic Augmentation",
+        "underwater": "Underwater & Realism",
+        "blending": "Blending & Edges",
+        "placement": "Object Placement"
+      },
+      "basicEffects": {
+        "blur": { "label": "Blur", "description": "Apply Gaussian blur to images" },
+        "noise": { "label": "Noise", "description": "Add random noise to images" },
+        "brightness": { "label": "Brightness", "description": "Adjust image brightness" },
+        "contrast": { "label": "Contrast", "description": "Adjust image contrast" },
+        "rotation": { "label": "Rotation", "description": "Rotate objects randomly" },
+        "scale": { "label": "Scale", "description": "Scale objects randomly" },
+        "flip_horizontal": { "label": "Horizontal Flip", "description": "Flip objects horizontally" },
+        "flip_vertical": { "label": "Vertical Flip", "description": "Flip objects vertically" },
+        "minValue": "Min Value",
+        "maxValue": "Max Value",
+        "probability": "Probability",
+        "minMaxError": "Minimum cannot be greater than maximum"
+      },
+      "colorCorrection": { "title": "Color Correction", "description": "Match object colors to background", "intensity": "Color Intensity" },
+      "blurMatching": { "title": "Blur Matching", "description": "Match blur level to background", "strength": "Blur Strength" },
+      "lightingEffect": {
+        "title": "Lighting Effects",
+        "description": "Apply realistic lighting to objects",
+        "type": "Lighting Type",
+        "intensity": "Lighting Intensity",
+        "types": { "ambient": "Ambient", "spotlight": "Spotlight", "gradient": "Gradient" }
+      },
+      "underwaterEffect": {
+        "title": "Underwater Tint",
+        "description": "Apply underwater color effects",
+        "intensity": "Underwater Intensity",
+        "clarity": "Water Clarity",
+        "clarityOptions": { "clear": "Clear", "murky": "Murky", "very_murky": "Very Murky" },
+        "colorLabel": "Water Color"
+      },
+      "shadowsEffect": { "title": "Drop Shadows", "description": "Add realistic shadows to objects", "opacity": "Shadow Opacity", "blur": "Shadow Blur" },
+      "causticsEffect": { "title": "Caustics", "description": "Light refraction patterns", "intensity": "Caustics Intensity", "deterministic": "Deterministic Pattern" },
+      "motionBlurEffect": { "title": "Motion Blur", "description": "Simulate movement blur", "probability": "Probability", "kernel": "Kernel Size" },
+      "perspectiveEffect": { "title": "Perspective Warp", "description": "Apply perspective distortion", "magnitude": "Magnitude" },
+      "blendingMethod": {
+        "title": "Blending Method",
+        "description": "How objects blend with background",
+        "method": "Method",
+        "methods": { "alpha": "Alpha Blend", "poisson": "Poisson Blend", "laplacian": "Laplacian Blend" },
+        "binaryAlpha": "Use Binary Alpha",
+        "featherRadius": "Alpha Feather Radius"
+      },
+      "edgeSmoothingEffect": { "title": "Edge Smoothing", "description": "Smooth object edges", "feather": "Edge Feather" },
+      "blurBudget": { "title": "Max Blur Budget", "description": "Maximum cumulative blur applied", "label": "Blur Budget" },
+      "placement": {
+        "objectsPerImage": {
+          "title": "Objects Per Image",
+          "description": "Number of objects to place",
+          "min": "Minimum",
+          "max": "Maximum",
+          "minMaxError": "Minimum objects cannot be greater than maximum"
+        },
+        "sizeConstraints": {
+          "title": "Size Constraints",
+          "description": "Object size limits",
+          "minSizeRatio": "Min Size Ratio",
+          "absoluteMinSize": "Absolute Min Size"
+        },
+        "areaRatios": {
+          "title": "Area Ratios",
+          "description": "Object area relative to image",
+          "min": "Min Area Ratio",
+          "max": "Max Area Ratio",
+          "minMaxError": "Min area ratio cannot be greater than max"
+        },
+        "overlap": {
+          "title": "Overlap Threshold",
+          "description": "Maximum allowed object overlap",
+          "threshold": "Threshold"
+        },
+        "semanticPlacement": {
+          "title": "Semantic Placement",
+          "description": "Places objects according to their physics (float/sink) in compatible scene regions"
+        }
+      },
+      "preview": {
+        "title": "Effects Preview",
+        "description": "Generate a sample composition with the current configuration",
+        "button": "Preview",
+        "refresh": "Refresh",
+        "loading": "Generating preview...",
+        "noSources": "Select backgrounds and objects in the Prepare step before previewing",
+        "noSamplesFound": "No sample images found in the selected directories",
+        "failed": "Failed to generate preview",
+        "objectsPlaced": "Objects placed",
+        "processingTime": "Processing time",
+        "rejected": "Image rejected by validation"
+      }
     }
   },
   "sourceSelection": {
@@ -280,8 +411,13 @@
     "actions": {
       "startGeneration": "Start Generation",
       "continueToExport": "Continue to Export",
+      "viewDataset": "View Generated Dataset",
       "suggestionsApplied": "Suggestions Applied",
       "suggestionsAppliedMsg": "Applied {count} parameter suggestions"
+    },
+    "logs": {
+      "title": "Job Logs",
+      "empty": "No logs available yet."
     },
     "autoTune": {
       "title": "Auto-Tune Effects",
@@ -344,6 +480,33 @@
       "voc": "Pascal VOC",
       "createml": "CreateML"
     },
+    "formatDescriptions": {
+      "yolo": "Normalized bbox coordinates in TXT files. Creates data.yaml for Ultralytics training.",
+      "voc": "XML annotation files per image. Compatible with Pascal VOC format tools.",
+      "coco": "Standard COCO format JSON. Copy with optional images."
+    },
+    "datasetLabel": "Dataset (COCO JSON)",
+    "datasetPlaceholder": "Choose a dataset to export...",
+    "imagesDirectoryLabel": "Images Directory",
+    "datasetInfo": "{images} images, {annotations} annotations, {categories} categories",
+    "optionsTitle": "Export Options",
+    "exportFormatLabel": "Export Format",
+    "includeImages": "Include images in export",
+    "formatDetailsTitle": "Format Details",
+    "resultTitle": "Export Complete",
+    "resultMsg": "Dataset successfully exported to {format} format",
+    "imagesExported": "Images Exported",
+    "annotationsExported": "Annotations",
+    "outputDirLabel": "Output Directory",
+    "yoloConfigLabel": "YOLO Config:",
+    "yoloConfigHint": "Use this data.yaml file to train with Ultralytics YOLO.",
+    "errors": {
+      "missingDataset": "Missing Dataset",
+      "missingDatasetMsg": "Please select a dataset to export",
+      "missingImagesDir": "Missing Images Directory",
+      "missingImagesDirMsg": "Please specify the images directory",
+      "exportFailedMsg": "Failed to export dataset"
+    },
     "actions": {
       "export": "Export Dataset"
     },
@@ -401,6 +564,44 @@
       "invalidRatios": "Invalid Ratios",
       "missingDataset": "Missing Dataset",
       "missingDatasetMsg": "Please select a dataset to split"
+    }
+  },
+  "datasetViewer": {
+    "title": "Dataset Viewer",
+    "subtitle": "Explore generated images and their annotations",
+    "back": "Back",
+    "loading": "Loading dataset...",
+    "loadFailed": "Failed to load dataset",
+    "empty": "No images found in this dataset",
+    "stats": {
+      "images": "Images",
+      "annotations": "Annotations",
+      "categories": "Categories",
+      "size": "Size"
+    },
+    "pagination": {
+      "page": "Page {current} of {total}",
+      "prev": "Previous",
+      "next": "Next"
+    },
+    "badges": {
+      "qualityPass": "Quality OK",
+      "qualityFail": "Low Quality",
+      "depthSource": "Depth source: {source}"
+    },
+    "modal": {
+      "title": "Image Detail",
+      "dimensions": "Dimensions",
+      "annotationsCount": "{count} annotations",
+      "quality": {
+        "title": "Quality Score",
+        "perceptual": "Perceptual Quality",
+        "anomaly": "Anomaly Score",
+        "overall": "Overall Score",
+        "pass": "Passed",
+        "fail": "Rejected",
+        "violations": "Physics Violations"
+      }
     }
   }
 }

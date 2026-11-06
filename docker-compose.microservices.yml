@@ -1,6 +1,6 @@
 services:
   # ============================================
-  # API Gateway - Orquestador central
+  # API Gateway - central orchestrator
   # ============================================
   gateway:
     build:
@@ -12,11 +12,10 @@ services:
     environment:
       - DEPTH_SERVICE_URL=http://depth:8001
       - SEGMENTATION_SERVICE_URL=http://segmentation:8002
-      - EFFECTS_SERVICE_URL=http://effects:8003
       - AUGMENTOR_SERVICE_URL=http://augmentor:8004
       - DOMAIN_GAP_SERVICE_URL=http://domain_gap:8005
       - PYTHONUNBUFFERED=1
-      # Rutas por defecto para datasets
+      # Default dataset paths
       - BACKGROUNDS_PATH=/app/datasets/Backgrounds_filtered
       - OBJECTS_PATH=/app/datasets/Objects
       # Job database path
@@ -33,21 +32,19 @@ services:
     volumes:
       - shared_data:/shared
       - jobs_db:/shared/db
-      # Dataset con Backgrounds_filtered/ y Objects/
-      # Configura DATASET_PATH en .env.microservices
+      # Dataset with Backgrounds_filtered/ and Objects/
+      # Set DATASET_PATH in .env
       - ${DATASET_PATH:-./datasets}:/app/datasets:rw
       # Output dir (needed by auto-tune to verify probe output)
       - ./output:/app/output
       # Domain configurations (built-in)
       - ./config/domains:/app/config/domains:ro
-    # Límites de recursos - hardware potente (96GB RAM, Core Ultra 9 - 24 cores)
+    # Resource limits
     mem_limit: 4G
     memswap_limit: 4G
     cpus: 2
     depends_on:
       depth:
-        condition: service_healthy
-      effects:
         condition: service_healthy
       augmentor:
         condition: service_healthy
@@ -80,7 +77,7 @@ services:
     volumes:
       - shared_data:/shared
       - checkpoints:/app/checkpoints
-    # Límites de recursos - RTX 5090 32GB VRAM (CPU reducido: 4 de 24 cores)
+    # Resource limits (one GPU is shared by the GPU services)
     mem_limit: 12G
     memswap_limit: 12G
     cpus: 3
@@ -124,11 +121,11 @@ services:
       - shared_data:/shared
       - jobs_db:/shared/db
       - checkpoints:/app/checkpoints
-      # Dataset para lectura de imagenes (extraccion de objetos)
+      # Dataset used to read images (object extraction)
       - ${DATASET_PATH:-./datasets}:/app/datasets:rw
-      # Output para objetos extraidos (escritura)
+      # Output for extracted objects (write)
       - ./output:/app/output
-    # Límites de recursos - RTX 5090 32GB VRAM (CPU reducido: 4 de 24 cores)
+    # Resource limits (one GPU is shared by the GPU services)
     mem_limit: 12G
     memswap_limit: 12G
     cpus: 3
@@ -152,35 +149,6 @@ services:
     restart: unless-stopped
 
   # ============================================
-  # Effects Service - Realism Pipeline
-  # ============================================
-  effects:
-    build:
-      context: ./services
-      dockerfile: effects/Dockerfile
-    container_name: synth-effects
-    ports:
-      - "8003:8003"
-    environment:
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - shared_data:/shared
-      - caustics_cache:/app/cache
-    # Límites de recursos - sin GPU
-    mem_limit: 4G
-    memswap_limit: 4G
-    cpus: 2
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/health', timeout=5)"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    networks:
-      - synth-network
-    restart: unless-stopped
-
-  # ============================================
   # Augmentor Service - Composition + Validation
   # ============================================
   augmentor:
@@ -193,7 +161,6 @@ services:
     environment:
       - CUDA_VISIBLE_DEVICES=0
       - DEPTH_SERVICE_URL=http://depth:8001
-      - EFFECTS_SERVICE_URL=http://effects:8003
       - SEGMENTATION_SERVICE_URL=http://segmentation:8002
       - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512,expandable_segments:False,garbage_collection_threshold:0.7
       - PYTHONUNBUFFERED=1
@@ -203,15 +170,17 @@ services:
       - shared_data:/shared
       - jobs_db:/shared/db
       - checkpoints:/app/checkpoints
-      # Dataset con Backgrounds_filtered/ y Objects/
+      # Dataset with Backgrounds_filtered/ and Objects/
       - ${DATASET_PATH:-./datasets}:/app/datasets:rw
-      # Output para imágenes generadas
+      # Output for generated images
       - ./output:/app/output
-    # Límites de recursos - SERVICIO CRÍTICO (RTX 5090, 96GB RAM, 24 cores)
+      # Domain configs (physics_properties for semantic placement)
+      - ./config:/app/config:ro
+    # Resource limits (most demanding service)
     mem_limit: 24G
     memswap_limit: 24G
     cpus: 8
-    shm_size: 8G  # Aumentado para operaciones GPU compartidas
+    shm_size: 8G  # Larger shared memory for GPU/dataloader workers
     deploy:
       resources:
         reservations:
@@ -221,8 +190,6 @@ services:
               capabilities: [gpu]
     depends_on:
       depth:
-        condition: service_healthy
-      effects:
         condition: service_healthy
       segmentation:
         condition: service_healthy
@@ -285,9 +252,9 @@ services:
     restart: unless-stopped
 
   # ============================================
-  # Frontend - Vue.js Modern UI (Principal)
+  # Frontend - Vue.js UI
   # ============================================
-  # Nginx sirve el frontend y actúa como reverse proxy para las APIs:
+  # Nginx serves the frontend and acts as reverse proxy for the APIs:
   #   /api/*           -> gateway:8000
   #   /segmentation/*  -> segmentation:8002
   frontend:
@@ -297,8 +264,8 @@ services:
     container_name: synth-frontend
     ports:
       - "3001:3000"
-    # No se necesitan variables VITE_* - nginx hace proxy a las APIs internas
-    # Límites de recursos - interfaz web ligera (nginx sirve archivos estáticos)
+    # No VITE_* variables needed: nginx proxies to the internal APIs
+    # Resource limits (nginx serves static files)
     mem_limit: 256M
     memswap_limit: 256M
     cpus: 0.5
@@ -323,7 +290,7 @@ networks:
     name: synth-network
 
 # ============================================
-# Volúmenes compartidos para transferencia eficiente
+# Shared volumes for efficient data transfer
 # ============================================
 volumes:
   shared_data:
@@ -338,12 +305,6 @@ volumes:
       type: none
       o: bind
       device: ${CHECKPOINTS_PATH:-./volumes/checkpoints}
-  caustics_cache:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${CACHE_PATH:-./volumes/cache}
   # Job database for persistence across restarts
   jobs_db:
     driver: local

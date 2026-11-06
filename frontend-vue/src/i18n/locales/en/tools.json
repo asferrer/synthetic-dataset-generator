@@ -48,7 +48,6 @@
       "gateway": "Gateway",
       "depth": "Depth Service",
       "segmentation": "Segmentation Service",
-      "effects": "Effects Service",
       "augmentor": "Augmentor Service"
     },
     "status": {
@@ -65,7 +64,7 @@
   },
   "objectExtraction": {
     "title": "Object Extraction",
-    "subtitle": "Extract objects from images using segmentation",
+    "subtitle": "Extract individual objects from a dataset for use in synthetic generation.",
     "inputImage": "Input Image",
     "inputImagePath": "Image Path",
     "outputDirectory": "Output Directory",
@@ -80,14 +79,36 @@
       "padding": "Padding",
       "saveOriginal": "Save Original Crop"
     },
+    "sourceDatasetTitle": "Source Dataset",
+    "cocoJsonPath": "COCO JSON Path",
+    "imagesDirectory": "Images Directory",
+    "outputSettingsTitle": "Output Settings",
+    "minObjectSize": "Minimum Object Size",
+    "includeMasks": "Include segmentation masks",
+    "includeMasksDesc": "Extract masks along with object crops",
+    "advancedOptionsTitle": "Advanced Options",
+    "useSam3": "Use SAM3 for masks",
+    "useSam3Desc": "Generate precise segmentation masks using Segment Anything Model 3. More accurate but slower.",
+    "deduplicate": "Remove duplicates",
+    "deduplicateDesc": "Skip objects that are visually similar to already extracted ones.",
+    "paddingLabel": "Padding around objects",
+    "paddingDesc": "Extra pixels to include around each object bounding box. Helps with edge artifacts.",
+    "progressTitle": "Extraction Progress",
+    "extracting": "Extracting...",
+    "jobIdLabel": "Job ID: {id}",
+    "missingInput": "Missing Input",
+    "missingInputMsg": "Please specify COCO JSON path and images directory",
+    "extractionFailedMsg": "Failed to start extraction",
     "actions": {
       "extract": "Extract Objects",
-      "extractAll": "Extract All"
+      "extractAll": "Extract All",
+      "startExtraction": "Start Extraction"
     },
     "notifications": {
       "started": "Extraction Started",
+      "startedMsg": "Job {id} started",
       "completed": "Extraction Complete",
-      "completedMsg": "Extracted {count} objects",
+      "completedMsg": "Objects extracted successfully",
       "failed": "Extraction Failed"
     }
   },
@@ -391,6 +412,11 @@
       "skip": "Skip",
       "issuesDetected": "issues detected",
       "parameterSuggestions": "parameter suggestions",
+      "recommendation": {
+        "low": "Domain gap is low. Your synthetic data should work well for training.",
+        "medium": "Moderate domain gap detected. Consider applying suggestions to improve quality.",
+        "high": "High domain gap detected. It is recommended to adjust parameters and regenerate before proceeding."
+      },
       "progress": {
         "phases": {
           "pending": "Starting analysis...",

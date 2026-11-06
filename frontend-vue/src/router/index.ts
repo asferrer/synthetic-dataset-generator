@@ -33,6 +33,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/workflow/ExportSplitView.vue'),
     meta: { titleKey: 'nav.titles.export', step: 4 },
   },
+  {
+    path: '/datasets/:jobId',
+    name: 'dataset-viewer',
+    component: () => import('@/views/DatasetViewerView.vue'),
+    meta: { titleKey: 'nav.titles.datasetViewer' },
+  },
   // Workflow redirects (backward compatibility)
   { path: '/analysis', redirect: '/prepare?tab=analyze' },
   { path: '/source-selection', redirect: '/prepare?tab=sources' },

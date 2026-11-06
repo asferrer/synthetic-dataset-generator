@@ -9,10 +9,8 @@ successive iterations fail to improve the score.
 """
 
 import os
-import shutil
 import time
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 from loguru import logger
 

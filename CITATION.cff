@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the article below."
+title: "Synthetic Dataset Generator: depth-aware copy-paste synthesis of detection datasets"
+type: software
+authors:
+  - family-names: "Sánchez Ferrer"
+    given-names: "Alejandro"
+license: Apache-2.0
+keywords:
+  - synthetic data
+  - object detection
+  - marine debris
+  - copy-paste augmentation
+repository-code: "https://github.com/asferrer/synthetic-dataset-generator"
+preferred-citation:
+  type: article
+  title: "When Does Synthetic Data Help Underwater Debris Detection? Gap Metrics, Data Regimes and Detector Paradigms"
+  authors:
+    - family-names: "Sánchez-Ferrer"
+      given-names: "Alejandro"
+    - family-names: "Gallego"
+      given-names: "Antonio Javier"
+    - family-names: "Calvo-Zaragoza"
+      given-names: "Jorge"
+  journal: "Neurocomputing"
+  year: 2026
+  notes: "Manuscript in preparation"

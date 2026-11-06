@@ -1,19 +1,19 @@
 # FastAPI and web server
-fastapi>=0.109.0
-uvicorn[standard]>=0.27.0
-python-multipart>=0.0.6
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+python-multipart==0.0.20
 
 # HTTP client
-httpx>=0.26.0
+httpx==0.28.1
 
 # Image processing
-opencv-python>=4.9.0
-numpy>=1.26.0
-Pillow>=10.2.0
+opencv-python==4.11.0.86
+numpy==1.26.4
+Pillow==12.2.0
 
 # Utilities
-pydantic>=2.5.0
-python-dotenv>=1.0.0
+pydantic==2.10.3
+python-dotenv==1.2.2
 
 # HuggingFace for model downloads
-huggingface-hub>=0.20.0
+huggingface-hub==1.10.2

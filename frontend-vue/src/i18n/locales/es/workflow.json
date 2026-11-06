@@ -108,6 +108,137 @@
       "targetScore": "Puntuación Objetivo",
       "maxIterations": "Máx. Iteraciones",
       "probeSize": "Tamaño del Lote de Prueba"
+    },
+    "effectsPanel": {
+      "resetAll": "Restablecer Todo",
+      "presetsTitle": "Presets Rápidos",
+      "presetsSubtitle": "Selecciona un preset o crea tu propia configuración",
+      "saveCurrent": "Guardar Actual",
+      "savedPresetsLabel": "Tus Presets Guardados:",
+      "saveModal": {
+        "title": "Guardar Configuración Actual",
+        "nameLabel": "Nombre del Preset",
+        "namePlaceholder": "Mi Preset Personalizado",
+        "cancel": "Cancelar",
+        "save": "Guardar Preset"
+      },
+      "presets": {
+        "underwater": { "name": "Marino Submarino", "description": "Optimizado para datasets submarinos con cáusticas y tinte de color" },
+        "urban": { "name": "Calle Urbana", "description": "Para escenas de calle, tráfico y entornos urbanos" },
+        "minimal": { "name": "Mínimo", "description": "Aumentación ligera para variaciones sutiles" },
+        "aggressive": { "name": "Agresivo", "description": "Aumentación fuerte para máxima variedad" }
+      },
+      "notifications": {
+        "presetApplied": "Preset Aplicado",
+        "presetAppliedMsg": "Se aplicó el preset \"{name}\"",
+        "nameRequired": "Nombre Requerido",
+        "nameRequiredMsg": "Por favor ingresa un nombre para el preset",
+        "presetSaved": "Preset Guardado",
+        "presetSavedMsg": "Se guardó el preset \"{name}\"",
+        "presetDeleted": "Preset Eliminado",
+        "presetDeletedMsg": "El preset personalizado ha sido eliminado",
+        "configSaved": "Configuración Guardada",
+        "configSavedMsg": "La configuración de efectos y ubicación ha sido guardada",
+        "configReset": "Configuración Restablecida",
+        "configResetMsg": "Todas las configuraciones se restablecieron a los valores por defecto",
+        "validationError": "Errores de Validación",
+        "validationErrorMsg": "Corrige los valores mínimo/máximo antes de continuar"
+      },
+      "tabs": {
+        "basic": "Aumentación Básica",
+        "underwater": "Submarino y Realismo",
+        "blending": "Mezcla y Bordes",
+        "placement": "Ubicación de Objetos"
+      },
+      "basicEffects": {
+        "blur": { "label": "Desenfoque", "description": "Aplica desenfoque Gaussiano a las imágenes" },
+        "noise": { "label": "Ruido", "description": "Agrega ruido aleatorio a las imágenes" },
+        "brightness": { "label": "Brillo", "description": "Ajusta el brillo de la imagen" },
+        "contrast": { "label": "Contraste", "description": "Ajusta el contraste de la imagen" },
+        "rotation": { "label": "Rotación", "description": "Rota objetos aleatoriamente" },
+        "scale": { "label": "Escala", "description": "Escala objetos aleatoriamente" },
+        "flip_horizontal": { "label": "Volteo Horizontal", "description": "Voltea objetos horizontalmente" },
+        "flip_vertical": { "label": "Volteo Vertical", "description": "Voltea objetos verticalmente" },
+        "minValue": "Valor Mínimo",
+        "maxValue": "Valor Máximo",
+        "probability": "Probabilidad",
+        "minMaxError": "El mínimo no puede ser mayor que el máximo"
+      },
+      "colorCorrection": { "title": "Corrección de Color", "description": "Iguala los colores del objeto con el fondo", "intensity": "Intensidad de Color" },
+      "blurMatching": { "title": "Igualación de Desenfoque", "description": "Iguala el nivel de desenfoque con el fondo", "strength": "Fuerza de Desenfoque" },
+      "lightingEffect": {
+        "title": "Efectos de Iluminación",
+        "description": "Aplica iluminación realista a los objetos",
+        "type": "Tipo de Iluminación",
+        "intensity": "Intensidad de Iluminación",
+        "types": { "ambient": "Ambiental", "spotlight": "Foco", "gradient": "Gradiente" }
+      },
+      "underwaterEffect": {
+        "title": "Tinte Submarino",
+        "description": "Aplica efectos de color submarino",
+        "intensity": "Intensidad Submarina",
+        "clarity": "Claridad del Agua",
+        "clarityOptions": { "clear": "Clara", "murky": "Turbia", "very_murky": "Muy Turbia" },
+        "colorLabel": "Color del Agua"
+      },
+      "shadowsEffect": { "title": "Sombras Proyectadas", "description": "Agrega sombras realistas a los objetos", "opacity": "Opacidad de Sombra", "blur": "Desenfoque de Sombra" },
+      "causticsEffect": { "title": "Cáusticas", "description": "Patrones de refracción de luz", "intensity": "Intensidad de Cáusticas", "deterministic": "Patrón Determinista" },
+      "motionBlurEffect": { "title": "Desenfoque de Movimiento", "description": "Simula el desenfoque por movimiento", "probability": "Probabilidad", "kernel": "Tamaño de Kernel" },
+      "perspectiveEffect": { "title": "Distorsión de Perspectiva", "description": "Aplica distorsión de perspectiva", "magnitude": "Magnitud" },
+      "blendingMethod": {
+        "title": "Método de Mezcla",
+        "description": "Cómo se mezclan los objetos con el fondo",
+        "method": "Método",
+        "methods": { "alpha": "Mezcla Alpha", "poisson": "Mezcla Poisson", "laplacian": "Mezcla Laplaciana" },
+        "binaryAlpha": "Usar Alpha Binario",
+        "featherRadius": "Radio de Difuminado Alpha"
+      },
+      "edgeSmoothingEffect": { "title": "Suavizado de Bordes", "description": "Suaviza los bordes de los objetos", "feather": "Difuminado de Borde" },
+      "blurBudget": { "title": "Presupuesto Máximo de Desenfoque", "description": "Desenfoque acumulativo máximo aplicado", "label": "Presupuesto de Desenfoque" },
+      "placement": {
+        "objectsPerImage": {
+          "title": "Objetos por Imagen",
+          "description": "Cantidad de objetos a colocar",
+          "min": "Mínimo",
+          "max": "Máximo",
+          "minMaxError": "El mínimo de objetos no puede ser mayor que el máximo"
+        },
+        "sizeConstraints": {
+          "title": "Restricciones de Tamaño",
+          "description": "Límites de tamaño de objetos",
+          "minSizeRatio": "Ratio de Tamaño Mínimo",
+          "absoluteMinSize": "Tamaño Mínimo Absoluto"
+        },
+        "areaRatios": {
+          "title": "Ratios de Área",
+          "description": "Área del objeto relativa a la imagen",
+          "min": "Ratio de Área Mínimo",
+          "max": "Ratio de Área Máximo",
+          "minMaxError": "El ratio de área mínimo no puede ser mayor que el máximo"
+        },
+        "overlap": {
+          "title": "Umbral de Solapamiento",
+          "description": "Solapamiento máximo permitido entre objetos",
+          "threshold": "Umbral"
+        },
+        "semanticPlacement": {
+          "title": "Ubicación Semántica",
+          "description": "Coloca objetos según su física (flotar/hundirse) en regiones compatibles de la escena"
+        }
+      },
+      "preview": {
+        "title": "Vista Previa de Efectos",
+        "description": "Genera una composición de muestra con la configuración actual",
+        "button": "Vista Previa",
+        "refresh": "Actualizar",
+        "loading": "Generando vista previa...",
+        "noSources": "Selecciona fondos y objetos en el paso Preparar antes de previsualizar",
+        "noSamplesFound": "No se encontraron imágenes de muestra en los directorios seleccionados",
+        "failed": "Error al generar la vista previa",
+        "objectsPlaced": "Objetos colocados",
+        "processingTime": "Tiempo de procesamiento",
+        "rejected": "Imagen rechazada por validación"
+      }
     }
   },
   "sourceSelection": {
@@ -280,8 +411,13 @@
     "actions": {
       "startGeneration": "Iniciar Generación",
       "continueToExport": "Continuar a Exportar",
+      "viewDataset": "Ver Dataset Generado",
       "suggestionsApplied": "Sugerencias Aplicadas",
       "suggestionsAppliedMsg": "{count} sugerencias de parámetros aplicadas"
+    },
+    "logs": {
+      "title": "Logs del Trabajo",
+      "empty": "Aún no hay logs disponibles."
     },
     "autoTune": {
       "title": "Auto-Ajuste de Efectos",
@@ -344,6 +480,33 @@
       "voc": "Pascal VOC",
       "createml": "CreateML"
     },
+    "formatDescriptions": {
+      "yolo": "Coordenadas de bbox normalizadas en archivos TXT. Crea data.yaml para entrenamiento con Ultralytics.",
+      "voc": "Archivos de anotación XML por imagen. Compatible con herramientas de formato Pascal VOC.",
+      "coco": "JSON estándar de formato COCO. Copia con imágenes opcionales."
+    },
+    "datasetLabel": "Dataset (COCO JSON)",
+    "datasetPlaceholder": "Elige un dataset para exportar...",
+    "imagesDirectoryLabel": "Directorio de Imágenes",
+    "datasetInfo": "{images} imágenes, {annotations} anotaciones, {categories} categorías",
+    "optionsTitle": "Opciones de Exportación",
+    "exportFormatLabel": "Formato de Exportación",
+    "includeImages": "Incluir imágenes en la exportación",
+    "formatDetailsTitle": "Detalles de Formato",
+    "resultTitle": "Exportación Completa",
+    "resultMsg": "Dataset exportado exitosamente a formato {format}",
+    "imagesExported": "Imágenes Exportadas",
+    "annotationsExported": "Anotaciones",
+    "outputDirLabel": "Directorio de Salida",
+    "yoloConfigLabel": "Configuración YOLO:",
+    "yoloConfigHint": "Usa este archivo data.yaml para entrenar con Ultralytics YOLO.",
+    "errors": {
+      "missingDataset": "Dataset Faltante",
+      "missingDatasetMsg": "Por favor selecciona un dataset para exportar",
+      "missingImagesDir": "Directorio de Imágenes Faltante",
+      "missingImagesDirMsg": "Por favor especifica el directorio de imágenes",
+      "exportFailedMsg": "Error al exportar el dataset"
+    },
     "actions": {
       "export": "Exportar Dataset"
     },
@@ -401,6 +564,44 @@
       "invalidRatios": "Proporciones Inválidas",
       "missingDataset": "Dataset Faltante",
       "missingDatasetMsg": "Por favor selecciona un dataset para dividir"
+    }
+  },
+  "datasetViewer": {
+    "title": "Visor de Dataset",
+    "subtitle": "Explora las imágenes generadas y sus anotaciones",
+    "back": "Volver",
+    "loading": "Cargando dataset...",
+    "loadFailed": "Error al cargar el dataset",
+    "empty": "No se encontraron imágenes en este dataset",
+    "stats": {
+      "images": "Imágenes",
+      "annotations": "Anotaciones",
+      "categories": "Categorías",
+      "size": "Tamaño"
+    },
+    "pagination": {
+      "page": "Página {current} de {total}",
+      "prev": "Anterior",
+      "next": "Siguiente"
+    },
+    "badges": {
+      "qualityPass": "Calidad OK",
+      "qualityFail": "Calidad Baja",
+      "depthSource": "Origen de profundidad: {source}"
+    },
+    "modal": {
+      "title": "Detalle de Imagen",
+      "dimensions": "Dimensiones",
+      "annotationsCount": "{count} anotaciones",
+      "quality": {
+        "title": "Puntuación de Calidad",
+        "perceptual": "Calidad Perceptual",
+        "anomaly": "Puntuación de Anomalía",
+        "overall": "Puntuación General",
+        "pass": "Aprobado",
+        "fail": "Rechazado",
+        "violations": "Violaciones Físicas"
+      }
     }
   }
 }

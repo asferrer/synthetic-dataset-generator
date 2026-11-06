@@ -73,6 +73,10 @@ class ObjectPlacement(BaseModel):
     scale: Optional[float] = Field(None, ge=0.1, le=5.0, description="Scale factor. Depth-aware if None")
     rotation: Optional[float] = Field(None, ge=-180, le=180, description="Rotation degrees. Random if None")
     material: Optional[str] = Field("plastic", description="Material type for physics validation")
+    # Synthesis profile (v10): decisions pre-sampled by the planner
+    size_quantile: Optional[float] = Field(None, ge=0, le=1, description="Quantile of the class's real size (faithful scale)")
+    augment: Optional[Dict[str, Any]] = Field(None, description="Per-paste augmentation parameters")
+    behavior_override: Optional[str] = Field(None, description="Forces the buoyancy behaviour (e.g. 'sink')")
 
 
 class AnnotationBox(BaseModel):
@@ -84,52 +88,76 @@ class AnnotationBox(BaseModel):
     class_name: str = Field(..., description="Object class name")
     confidence: float = Field(1.0, ge=0, le=1, description="Confidence score")
     area: int = Field(0, description="Object area in pixels")
+    source_object: Optional[str] = Field(
+        None, description="Object crop used for this annotation (path inside objects_dir)"
+    )
+    # Profile v10 traceability (None under the legacy behaviour)
+    scale: Optional[float] = Field(None, description="Scale factor applied to the crop")
+    target_rel_size: Optional[float] = Field(None, description="Target square root of the box's relative area")
+    augmentations: Optional[Dict[str, Any]] = Field(None, description="Augmentations applied to the crop")
+    # Copy-paste onto real images (v11): "real" = kept original box, "pasted" = pasted object
+    origin: Optional[str] = Field(None, description="real | pasted (only with copy_paste_real)")
+    # Mask of the pasted object (uncompressed COCO RLE, column-major); None unless `save_masks` is set in the profile
+    mask_rle: Optional[Dict[str, Any]] = Field(None, description="RLE {size:[h,w], counts:[...]} of the object mask")
+
+
+TRACE_FIELDS = ("scale", "target_rel_size", "augmentations")
 
 
 class EffectsConfig(BaseModel):
-    """Configuration for realism effects"""
-    # ===== REVISED INTENSITY DEFAULTS (BUG #11 FIX) =====
-    color_intensity: float = Field(0.12, ge=0, le=1, description="Color correction intensity (0.1-0.15 recommended to preserve object details)")
-    blur_strength: float = Field(0.5, ge=0, le=2, description="Blur matching strength (low to preserve object details)")
-    underwater_intensity: float = Field(0.15, ge=0, le=1, description="Underwater tint intensity (subtle for training data)")
-    caustics_intensity: float = Field(0.10, ge=0, le=0.5, description="Caustics effect intensity")
-    shadow_opacity: float = Field(0.10, ge=0, le=0.5, description="Shadow darkness (subtle underwater shadows)")
+    """Configuration for realism effects.
+
+    Defaults tuned for underwater scenes via systematic parameter studies:
+    a grid search over color_intensity/blur_strength/caustics/shadow, and an underwater tint
+    integration study (the underwater effect is part of the default pipeline; water_color is a
+    balanced ocean blue-green).
+    """
+    # ===== Optimised defaults =====
+    color_intensity: float = Field(0.25, ge=0, le=1, description="Color correction intensity. 0.22-0.28 optimal: LAB Reinhard transfer adapts tone without bleaching")
+    blur_strength: float = Field(0.65, ge=0, le=2, description="Blur matching strength. 0.6-0.7 optimal: matches background DOF without losing object detail")
+    underwater_intensity: float = Field(0.33, ge=0, le=1, description="Underwater tint intensity. 0.28-0.35 optimal: unifies color cast between object and background")
+    caustics_intensity: float = Field(0.12, ge=0, le=0.5, description="Caustics effect intensity. 0.10-0.13 optimal: unifies illumination without artefacts")
+    shadow_opacity: float = Field(0.12, ge=0, le=0.5, description="Shadow darkness. 0.11-0.13 optimal: anchors objects to background with diffuse underwater shadow")
 
     # Options
     lighting_type: str = Field("ambient", description="spotlight|gradient|ambient")
     lighting_intensity: float = Field(0.5, ge=0, le=1, description="Lighting effect intensity")
     motion_blur_probability: float = Field(0.2, ge=0, le=1, description="Probability of motion blur")
     motion_blur_kernel: int = Field(11, ge=3, le=50, description="Motion blur kernel size")
-    shadow_blur: int = Field(25, ge=3, le=61, description="Shadow blur kernel size (soft underwater shadows)")
-    edge_feather: int = Field(4, ge=1, le=15, description="Edge feathering pixels for smooth transitions")
+    shadow_blur: int = Field(28, ge=3, le=61, description="Shadow blur kernel size. 25-30 optimal: soft diffuse shadow natural for underwater")
+    edge_feather: int = Field(12, ge=1, le=25, description="Edge feathering pixels for edge_smoothing effect. 10-14 optimal: smooth transition zone at object boundary. Used only when edge_smoothing is in effects list")
 
     # Water settings
-    water_color: Tuple[int, int, int] = Field((120, 80, 20), description="BGR water tint color")
+    water_color: Tuple[int, int, int] = Field((180, 120, 30), description="BGR water tint color. (180,120,30) = balanced ocean blue-green.")
     water_clarity: WaterClarity = Field(WaterClarity.CLEAR, description="Water clarity level")
 
-    # ===== NEW FIELDS (BUG FIXES) =====
-    # Identity validation (BUG #3, #10)
+    # ===== PHYSICAL REALISM (default OFF to preserve parameter-study comparability) =====
+    underwater_physical: bool = Field(False, description="Use Beer-Lambert depth-dependent attenuation instead of flat tint for the underwater effect")
+    caustics_depth_aware: bool = Field(False, description="Fade caustics with distance using the depth map")
+    depth_occlusion: bool = Field(False, description="Occlude object pixels behind closer background geometry; objects <25% visible are retried")
+
+    # Identity validation
     # Note: Disabled by default as thresholds are difficult to calibrate for strong underwater effects
     validate_identity: bool = Field(False, description="Validate object remains recognizable after effects")
     max_color_shift: float = Field(50, ge=10, le=100, description="Max LAB color shift for identity validation (delta-E units)")
     min_sharpness_ratio: float = Field(0.15, ge=0.05, le=1.0, description="Min sharpness preservation ratio for identity validation")
     min_contrast_ratio: float = Field(0.2, ge=0.05, le=1.0, description="Min contrast preservation ratio for identity validation")
 
-    # Alpha blending (BUG #2)
+    # Alpha blending
     use_binary_alpha: bool = Field(True, description="Use binary alpha instead of gradients to prevent color bleeding")
-    alpha_feather_radius: int = Field(1, ge=0, le=3, description="Alpha feathering pixels (0=hard edge, 1-2=recommended)")
+    alpha_feather_radius: int = Field(2, ge=0, le=3, description="Alpha feathering pixels. 2 optimal: anti-aliased edge without colour bleed")
 
-    # Blur budget (BUG #5)
+    # Blur budget
     max_blur_budget: float = Field(10.0, ge=3, le=20, description="Max cumulative blur in pixels for small objects")
 
-    # Size constraints (BUG #7)
+    # Size constraints
     min_object_size_ratio: float = Field(0.025, ge=0.01, le=0.1, description="Min object size as ratio of image dimension (2.5% = 16px for 640x640)")
     absolute_min_size: int = Field(15, ge=10, le=30, description="Absolute minimum object size in pixels")
 
-    # Caustics (BUG #4)
-    caustics_deterministic: bool = Field(True, description="Use deterministic caustics pattern for training data consistency")
+    # Caustics
+    caustics_deterministic: bool = Field(True, description="DEPRECATED (no effect): caustics are now seeded per image for dataset diversity")
 
-    # Bbox recalculation (BUG #1, #6)
+    # Bbox recalculation
     recalculate_bbox_after_global: bool = Field(True, description="Recalculate bbox after global effects (caustics, underwater)")
 
 
@@ -193,6 +221,12 @@ class ComposeRequest(BaseModel):
     validate_quality: bool = Field(False, description="Run quality validation")
     validate_physics: bool = Field(False, description="Run physics validation")
 
+    # Placement
+    semantic_placement: bool = Field(
+        True,
+        description="Place objects in scene regions compatible with their buoyancy (sink/float/hover). Disable for random-placement ablation."
+    )
+
     # Output
     output_path: str = Field(..., description="Path to save composed image")
     save_annotations: bool = Field(True, description="Save annotation JSON")
@@ -211,14 +245,40 @@ class ComposeBatchRequest(BaseModel):
 
     # Effects
     effects: List[EffectType] = Field(
-        default=[EffectType.COLOR_CORRECTION, EffectType.BLUR_MATCHING, EffectType.CAUSTICS],
-        description="Effects to apply"
+        default=[
+            EffectType.COLOR_CORRECTION,
+            EffectType.BLUR_MATCHING,
+            EffectType.UNDERWATER,
+            EffectType.CAUSTICS,
+            EffectType.SHADOWS,
+            EffectType.EDGE_SMOOTHING,
+        ],
+        description="Effects to apply. Default tuned for underwater realism."
     )
     effects_config: EffectsConfig = Field(default_factory=EffectsConfig)
 
     # Depth
     depth_aware: bool = Field(True, description="Use depth-aware placement")
     depth_service_url: Optional[str] = Field(None, description="URL to depth service")
+
+    # Placement
+    semantic_placement: bool = Field(
+        True,
+        description="Place objects in scene regions compatible with their buoyancy (sink/float/hover). Disable for random-placement ablation."
+    )
+
+    # Reproducibility
+    synth_profile: Optional[str] = Field(
+        None, description="Synthesis profile ('v10', 'v11'); None = legacy behaviour (no synthesis profile)"
+    )
+    synth_overrides: Optional[Dict[str, Any]] = Field(
+        None, description="SynthProfile fields that replace those of the profile"
+    )
+    seed: Optional[int] = Field(
+        None,
+        description="Seed for Python/NumPy RNGs at job start. Fully reproducible only in sequential mode "
+                    "(parallel mode interleaves random draws across concurrent compositions)"
+    )
 
     # Validation
     validate_quality: bool = Field(False, description="Run quality validation")
@@ -301,6 +361,7 @@ class ComposeResponse(BaseModel):
     annotations: List[AnnotationBox] = Field(default_factory=list)
     objects_placed: int
     depth_used: bool
+    depth_source: Optional[str] = Field(None, description="service | fallback_gradient | precomputed")
     effects_applied: List[str]
 
     # Validation results (if requested)

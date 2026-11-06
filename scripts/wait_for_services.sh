@@ -22,9 +22,9 @@ SERVICES=(
     "gateway:http://localhost:8000/health"
     "depth:http://localhost:8001/health"
     "segmentation:http://localhost:8002/health"
-    "effects:http://localhost:8003/health"
     "augmentor:http://localhost:8004/health"
-    "frontend:http://localhost:8501"
+    "domain_gap:http://localhost:8005/health"
+    "frontend:http://localhost:3001"
 )
 
 echo "Waiting for services to be healthy (timeout: ${TIMEOUT}s)..."

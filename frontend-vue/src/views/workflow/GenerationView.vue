@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useWorkflowStore } from '@/stores/workflow'
 import { useUiStore } from '@/stores/ui'
-import { startGeneration, getJob, getActiveLabelingJobs, startAutoTune, getAutoTuneStatus, cancelAutoTune } from '@/lib/api'
+import { startGeneration, getJob, getJobLogs, getActiveLabelingJobs, startAutoTune, getAutoTuneStatus, cancelAutoTune } from '@/lib/api'
 import { useDomainGapStore } from '@/stores/domainGap'
 import MetricCard from '@/components/common/MetricCard.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -41,6 +41,7 @@ import {
   Target,
   Zap,
   RotateCcw,
+  ScrollText,
 } from 'lucide-vue-next'
 import GapValidationPanel from '@/components/domain-gap/GapValidationPanel.vue'
 import type { Job, LabelingJob, ValidationConfig, BatchConfig, LightingEstimationConfig, DatasetMetadata } from '@/types/api'
@@ -56,6 +57,9 @@ const currentJob = ref<Job | null>(null)
 const activeLabelingJobs = ref<LabelingJob[]>([])
 const error = ref<string | null>(null)
 const pollingInterval = ref<ReturnType<typeof setInterval> | null>(null)
+const jobLogs = ref<string[]>([])
+
+const TERMINAL_JOB_STATUSES: string[] = ['completed', 'failed', 'cancelled', 'interrupted']
 
 // Auto-tune state
 const autoTuneRunning = ref(false)
@@ -161,6 +165,7 @@ async function startGenerationJob() {
       use_depth: useDepth.value,
       use_segmentation: useSegmentation.value,
       depth_aware_placement: depthAwarePlacement.value,
+      semantic_placement: workflowStore.semanticPlacement,
     })
 
     workflowStore.setActiveJobId(response.job_id)
@@ -168,8 +173,16 @@ async function startGenerationJob() {
     startPolling(response.job_id)
   } catch (e: any) {
     error.value = e.message || t('workflow.generation.notifications.failed')
-    uiStore.showError(t('workflow.generation.notifications.failed'), error.value)
+    uiStore.showError(t('workflow.generation.notifications.failed'), error.value ?? undefined)
     generating.value = false
+  }
+}
+
+async function fetchLogs(jobId: string) {
+  try {
+    jobLogs.value = await getJobLogs(jobId)
+  } catch (e) {
+    // Ignore log fetch errors, keep last known logs
   }
 }
 
@@ -177,6 +190,7 @@ async function pollJobStatus(jobId: string) {
   try {
     const job = await getJob(jobId)
     currentJob.value = job
+    fetchLogs(jobId)
 
     if (job.status === 'completed') {
       stopPolling()
@@ -187,7 +201,7 @@ async function pollJobStatus(jobId: string) {
       stopPolling()
       generating.value = false
       error.value = job.error || t('workflow.generation.notifications.failed')
-      uiStore.showError(t('workflow.generation.notifications.failed'), error.value)
+      uiStore.showError(t('workflow.generation.notifications.failed'), error.value ?? undefined)
     }
   } catch (e) {
     // Ignore polling errors
@@ -395,9 +409,31 @@ watch(() => workflowStore.balancingTargets, (newTargets) => {
 // Load active labeling jobs
 loadActiveLabelingJobs()
 
-// Load reference sets for auto-tune panel
+// Reconnect to an in-flight or completed job after a page reload
+async function resumeActiveJob() {
+  if (!workflowStore.activeJobId) return
+
+  try {
+    const job = await getJob(workflowStore.activeJobId)
+    currentJob.value = job
+    fetchLogs(job.job_id)
+
+    if (!TERMINAL_JOB_STATUSES.includes(job.status)) {
+      generating.value = true
+      startPolling(job.job_id)
+    } else if (job.status === 'failed') {
+      error.value = job.error || t('workflow.generation.notifications.failed')
+    }
+  } catch (e) {
+    // Job no longer exists (e.g. purged) - clear the stale reference
+    workflowStore.setActiveJobId(null)
+  }
+}
+
+// Load reference sets for auto-tune panel and reconnect to any active job
 onMounted(() => {
   domainGapStore.fetchReferenceSets()
+  resumeActiveJob()
 })
 
 // Cleanup on unmount
@@ -940,6 +976,21 @@ onUnmounted(() => {
           :style="{ width: `${currentJob.progress}%` }"
         />
       </div>
+
+      <!-- Job Logs (collapsible) -->
+      <Disclosure v-slot="{ open }" as="div" class="mt-4">
+        <DisclosureButton class="flex w-full items-center justify-between rounded-lg bg-background-tertiary px-4 py-2 text-sm text-gray-300 hover:text-white">
+          <span class="flex items-center gap-2">
+            <ScrollText class="h-4 w-4" />
+            {{ t('workflow.generation.logs.title') }}
+          </span>
+          <ChevronDown :class="['h-4 w-4 transition-transform', open ? 'rotate-180' : '']" />
+        </DisclosureButton>
+        <DisclosurePanel class="mt-2 rounded-lg bg-black/30 p-3">
+          <p v-if="jobLogs.length === 0" class="text-sm text-gray-500">{{ t('workflow.generation.logs.empty') }}</p>
+          <pre v-else class="max-h-64 overflow-y-auto whitespace-pre-wrap text-xs text-gray-300">{{ jobLogs.join('\n') }}</pre>
+        </DisclosurePanel>
+      </Disclosure>
     </div>
 
     <!-- Metrics (after completion) -->
@@ -960,6 +1011,14 @@ onUnmounted(() => {
         :value="`${((currentJob.result as any)?.duration_seconds || 0).toFixed(1)}s`"
         :icon="Clock"
       />
+    </div>
+
+    <!-- View Generated Dataset -->
+    <div v-if="currentJob?.status === 'completed'" class="flex justify-center">
+      <BaseButton variant="outline" @click="router.push(`/datasets/${currentJob.job_id}`)">
+        <Image class="h-5 w-5" />
+        {{ t('workflow.generation.actions.viewDataset') }}
+      </BaseButton>
     </div>
 
     <!-- Domain Gap Validation (Step 4.5) -->

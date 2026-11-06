@@ -2,7 +2,7 @@
   "domain_id": "underwater",
   "name": "Underwater Debris",
   "description": "Underwater scenes focused on marine waste and debris detection. Optimized for identifying trash, plastic, nets, and other pollutants in oceanic environments with caustics, water tinting, and buoyancy physics.",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "icon": "Trash2",
   "is_builtin": true,
   "regions": [
@@ -10,25 +10,63 @@
       "id": "open_water",
       "name": "open_water",
       "display_name": "Open Water",
-      "color_rgb": [255, 150, 50],
+      "color_rgb": [
+        255,
+        150,
+        50
+      ],
       "sam3_prompt": "water",
       "detection_heuristics": {
         "color_ranges": [
-          {"color_space": "hsv", "min": [80, 30, 50], "max": [135, 255, 255]}
+          {
+            "color_space": "hsv",
+            "min": [
+              80,
+              30,
+              50
+            ],
+            "max": [
+              135,
+              255,
+              255
+            ]
+          }
         ],
-        "position_zone": {"y_min": 0.2, "y_max": 0.8}
+        "position_zone": {
+          "y_min": 0.2,
+          "y_max": 0.8
+        }
       }
     },
     {
       "id": "seafloor",
       "name": "seafloor",
       "display_name": "Seafloor",
-      "color_rgb": [50, 150, 200],
+      "color_rgb": [
+        50,
+        150,
+        200
+      ],
       "sam3_prompt": "seafloor",
       "detection_heuristics": {
-        "position_zone": {"y_min": 0.55, "y_max": 1.0},
+        "position_zone": {
+          "y_min": 0.55,
+          "y_max": 1.0
+        },
         "color_ranges": [
-          {"color_space": "hsv", "min": [0, 0, 0], "max": [180, 150, 180]}
+          {
+            "color_space": "hsv",
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              180,
+              150,
+              180
+            ]
+          }
         ]
       }
     },
@@ -36,22 +74,48 @@
       "id": "surface",
       "name": "surface",
       "display_name": "Water Surface",
-      "color_rgb": [255, 255, 200],
+      "color_rgb": [
+        255,
+        255,
+        200
+      ],
       "sam3_prompt": "water surface",
       "detection_heuristics": {
-        "position_zone": {"y_min": 0.0, "y_max": 0.3},
-        "brightness_range": {"min": 0.6, "max": 1.0}
+        "position_zone": {
+          "y_min": 0.0,
+          "y_max": 0.3
+        },
+        "brightness_range": {
+          "min": 0.6,
+          "max": 1.0
+        }
       }
     },
     {
       "id": "vegetation",
       "name": "vegetation",
       "display_name": "Vegetation (Seaweed/Kelp)",
-      "color_rgb": [50, 200, 50],
+      "color_rgb": [
+        50,
+        200,
+        50
+      ],
       "sam3_prompt": "seaweed",
       "detection_heuristics": {
         "color_ranges": [
-          {"color_space": "hsv", "min": [35, 40, 30], "max": [85, 255, 200]}
+          {
+            "color_space": "hsv",
+            "min": [
+              35,
+              40,
+              30
+            ],
+            "max": [
+              85,
+              255,
+              200
+            ]
+          }
         ]
       }
     },
@@ -59,11 +123,27 @@
       "id": "rocky",
       "name": "rocky",
       "display_name": "Rocky Area",
-      "color_rgb": [100, 100, 100],
+      "color_rgb": [
+        100,
+        100,
+        100
+      ],
       "sam3_prompt": "rock",
       "detection_heuristics": {
         "color_ranges": [
-          {"color_space": "hsv", "min": [0, 0, 30], "max": [180, 60, 150]}
+          {
+            "color_space": "hsv",
+            "min": [
+              0,
+              0,
+              30
+            ],
+            "max": [
+              180,
+              60,
+              150
+            ]
+          }
         ]
       }
     },
@@ -71,12 +151,31 @@
       "id": "sandy",
       "name": "sandy",
       "display_name": "Sandy Bottom",
-      "color_rgb": [100, 180, 220],
+      "color_rgb": [
+        100,
+        180,
+        220
+      ],
       "sam3_prompt": "sand",
       "detection_heuristics": {
-        "position_zone": {"y_min": 0.6, "y_max": 1.0},
+        "position_zone": {
+          "y_min": 0.6,
+          "y_max": 1.0
+        },
         "color_ranges": [
-          {"color_space": "hsv", "min": [15, 20, 100], "max": [35, 120, 255]}
+          {
+            "color_space": "hsv",
+            "min": [
+              15,
+              20,
+              100
+            ],
+            "max": [
+              35,
+              120,
+              255
+            ]
+          }
         ]
       }
     },
@@ -84,12 +183,31 @@
       "id": "murky",
       "name": "murky",
       "display_name": "Murky Water",
-      "color_rgb": [80, 80, 60],
+      "color_rgb": [
+        80,
+        80,
+        60
+      ],
       "sam3_prompt": null,
       "detection_heuristics": {
-        "brightness_range": {"min": 0.0, "max": 0.4},
+        "brightness_range": {
+          "min": 0.0,
+          "max": 0.4
+        },
         "color_ranges": [
-          {"color_space": "hsv", "min": [20, 10, 20], "max": [60, 80, 120]}
+          {
+            "color_space": "hsv",
+            "min": [
+              20,
+              10,
+              20
+            ],
+            "max": [
+              60,
+              80,
+              120
+            ]
+          }
         ]
       }
     },
@@ -97,7 +215,11 @@
       "id": "unknown",
       "name": "unknown",
       "display_name": "Unknown",
-      "color_rgb": [128, 128, 128],
+      "color_rgb": [
+        128,
+        128,
+        128
+      ],
       "sam3_prompt": null
     }
   ],
@@ -106,68 +228,201 @@
       "class_name": "Bottle",
       "display_name": "Bottle",
       "real_world_size_meters": 0.25,
-      "keywords": ["bottle", "botella", "plastic_bottle", "glass_bottle"],
-      "physics_properties": {"density_relative": 1.10, "behavior": "sink"}
+      "keywords": [
+        "bottle",
+        "botella",
+        "plastic_bottle",
+        "glass_bottle"
+      ],
+      "physics_properties": {
+        "density_relative": 1.1,
+        "behavior": "sink"
+      }
     },
     {
       "class_name": "Can",
       "display_name": "Can",
       "real_world_size_meters": 0.12,
-      "keywords": ["can", "lata", "aluminum", "tin_can", "beverage_can"],
-      "physics_properties": {"density_relative": 2.70, "behavior": "sink"}
+      "keywords": [
+        "can",
+        "lata",
+        "aluminum",
+        "tin_can",
+        "beverage_can"
+      ],
+      "physics_properties": {
+        "density_relative": 2.7,
+        "behavior": "sink"
+      }
     },
     {
       "class_name": "Fishing_Net",
       "display_name": "Fishing Net",
       "real_world_size_meters": 1.5,
-      "keywords": ["fishing_net", "fishing net", "net", "red_de_pesca", "ghost_net"],
-      "physics_properties": {"density_relative": 1.08, "behavior": "hover"}
+      "keywords": [
+        "fishing_net",
+        "fishing net",
+        "net",
+        "red_de_pesca",
+        "ghost_net"
+      ],
+      "physics_properties": {
+        "density_relative": 1.08,
+        "behavior": "hover"
+      }
     },
     {
       "class_name": "Glove",
       "display_name": "Glove",
       "real_world_size_meters": 0.25,
-      "keywords": ["glove", "guante", "rubber_glove", "latex_glove"],
-      "physics_properties": {"density_relative": 0.95, "behavior": "float"}
+      "keywords": [
+        "glove",
+        "guante",
+        "rubber_glove",
+        "latex_glove"
+      ],
+      "physics_properties": {
+        "density_relative": 0.95,
+        "behavior": "float"
+      }
     },
     {
       "class_name": "Mask",
       "display_name": "Mask",
       "real_world_size_meters": 0.18,
-      "keywords": ["mask", "mascarilla", "face_mask", "surgical_mask"],
-      "physics_properties": {"density_relative": 0.93, "behavior": "float"}
+      "keywords": [
+        "mask",
+        "mascarilla",
+        "face_mask",
+        "surgical_mask"
+      ],
+      "physics_properties": {
+        "density_relative": 0.93,
+        "behavior": "float"
+      }
     },
     {
       "class_name": "Metal_Debris",
       "display_name": "Metal Debris",
       "real_world_size_meters": 0.35,
-      "keywords": ["metal_debris", "metal", "chatarra", "scrap_metal", "iron"],
-      "physics_properties": {"density_relative": 7.80, "behavior": "sink"}
+      "keywords": [
+        "metal_debris",
+        "metal",
+        "chatarra",
+        "scrap_metal",
+        "iron"
+      ],
+      "physics_properties": {
+        "density_relative": 7.8,
+        "behavior": "sink"
+      }
     },
     {
       "class_name": "Plastic_Debris",
       "display_name": "Plastic Debris",
-      "real_world_size_meters": 0.20,
-      "keywords": ["plastic_debris", "plastic", "plastico", "plastic_waste", "wrapper"],
-      "physics_properties": {"density_relative": 0.95, "behavior": "float"}
+      "real_world_size_meters": 0.2,
+      "keywords": [
+        "plastic_debris",
+        "plastic",
+        "plastico",
+        "plastic_waste",
+        "wrapper"
+      ],
+      "physics_properties": {
+        "density_relative": 0.95,
+        "behavior": "float"
+      }
     },
     {
       "class_name": "Tire",
       "display_name": "Tire",
       "real_world_size_meters": 0.65,
-      "keywords": ["tire", "tyre", "llanta", "neumatico", "rubber_tire"],
-      "physics_properties": {"density_relative": 1.20, "behavior": "sink"}
+      "keywords": [
+        "tire",
+        "tyre",
+        "llanta",
+        "neumatico",
+        "rubber_tire"
+      ],
+      "physics_properties": {
+        "density_relative": 1.2,
+        "behavior": "sink"
+      }
     }
   ],
   "compatibility_matrix": {
-    "Bottle": {"seafloor": 1.0, "sandy": 0.9, "rocky": 0.8, "open_water": 0.7, "surface": 0.6, "murky": 0.5, "vegetation": 0.4},
-    "Can": {"seafloor": 1.0, "sandy": 1.0, "rocky": 0.8, "open_water": 0.3, "murky": 0.5, "surface": 0.1, "vegetation": 0.3},
-    "Fishing_Net": {"open_water": 1.0, "seafloor": 0.8, "vegetation": 0.9, "rocky": 0.7, "surface": 0.6, "murky": 0.5, "sandy": 0.6},
-    "Glove": {"surface": 1.0, "open_water": 0.9, "seafloor": 0.5, "sandy": 0.5, "murky": 0.4, "vegetation": 0.3, "rocky": 0.3},
-    "Mask": {"surface": 1.0, "open_water": 0.9, "seafloor": 0.4, "sandy": 0.4, "murky": 0.4, "vegetation": 0.3, "rocky": 0.2},
-    "Metal_Debris": {"seafloor": 1.0, "sandy": 1.0, "rocky": 0.9, "murky": 0.6, "open_water": 0.2, "vegetation": 0.3, "surface": 0.0},
-    "Plastic_Debris": {"surface": 1.0, "open_water": 0.9, "seafloor": 0.7, "sandy": 0.6, "vegetation": 0.6, "murky": 0.5, "rocky": 0.4},
-    "Tire": {"seafloor": 1.0, "sandy": 0.9, "rocky": 0.8, "murky": 0.6, "open_water": 0.2, "vegetation": 0.3, "surface": 0.0}
+    "Bottle": {
+      "seafloor": 1.0,
+      "sandy": 0.9,
+      "rocky": 0.8,
+      "open_water": 0.7,
+      "surface": 0.6,
+      "murky": 0.5,
+      "vegetation": 0.4
+    },
+    "Can": {
+      "seafloor": 1.0,
+      "sandy": 1.0,
+      "rocky": 0.8,
+      "open_water": 0.3,
+      "murky": 0.5,
+      "surface": 0.1,
+      "vegetation": 0.3
+    },
+    "Fishing_Net": {
+      "open_water": 1.0,
+      "seafloor": 0.8,
+      "vegetation": 0.9,
+      "rocky": 0.7,
+      "surface": 0.6,
+      "murky": 0.5,
+      "sandy": 0.6
+    },
+    "Glove": {
+      "surface": 1.0,
+      "open_water": 0.9,
+      "seafloor": 0.5,
+      "sandy": 0.5,
+      "murky": 0.4,
+      "vegetation": 0.3,
+      "rocky": 0.3
+    },
+    "Mask": {
+      "surface": 1.0,
+      "open_water": 0.9,
+      "seafloor": 0.4,
+      "sandy": 0.4,
+      "murky": 0.4,
+      "vegetation": 0.3,
+      "rocky": 0.2
+    },
+    "Metal_Debris": {
+      "seafloor": 1.0,
+      "sandy": 1.0,
+      "rocky": 0.9,
+      "murky": 0.6,
+      "open_water": 0.2,
+      "vegetation": 0.3,
+      "surface": 0.0
+    },
+    "Plastic_Debris": {
+      "surface": 1.0,
+      "open_water": 0.9,
+      "seafloor": 0.7,
+      "sandy": 0.6,
+      "vegetation": 0.6,
+      "murky": 0.5,
+      "rocky": 0.4
+    },
+    "Tire": {
+      "seafloor": 1.0,
+      "sandy": 0.9,
+      "rocky": 0.8,
+      "murky": 0.6,
+      "open_water": 0.2,
+      "vegetation": 0.3,
+      "surface": 0.0
+    }
   },
   "effects": {
     "domain_specific": [
@@ -175,8 +430,12 @@
         "effect_id": "underwater_tint",
         "enabled_by_default": true,
         "parameters": {
-          "intensity": 0.15,
-          "water_color_bgr": [120, 80, 20],
+          "intensity": 0.33,
+          "water_color_bgr": [
+            180,
+            120,
+            30
+          ],
           "depth_falloff": true
         }
       },
@@ -184,7 +443,7 @@
         "effect_id": "caustics",
         "enabled_by_default": true,
         "parameters": {
-          "intensity": 0.10,
+          "intensity": 0.1,
           "deterministic": true,
           "pattern_scale": 1.0
         }
@@ -204,10 +463,27 @@
     ],
     "disabled": [],
     "universal_overrides": {
-      "color_correction": {"color_intensity": 0.15},
-      "blur_matching": {"blur_strength": 0.4},
-      "lighting": {"lighting_type": "ambient", "lighting_intensity": 0.4},
-      "shadows": {"shadow_opacity": 0.08}
+      "color_correction": {
+        "color_intensity": 0.25
+      },
+      "blur_matching": {
+        "blur_strength": 0.65
+      },
+      "underwater": {
+        "underwater_intensity": 0.33,
+        "water_color": [180, 120, 30]
+      },
+      "caustics": {
+        "caustics_intensity": 0.12
+      },
+      "shadows": {
+        "shadow_opacity": 0.12,
+        "shadow_blur": 28
+      },
+      "edge_smoothing": {
+        "edge_feather": 12,
+        "alpha_feather_radius": 2
+      }
     }
   },
   "physics": {
@@ -221,13 +497,58 @@
   },
   "presets": [
     {
+      "id": "optimal_balanced",
+      "name": "Optimal Balanced",
+      "description": "Best realism/visibility balance for object detection training. Tuned via three systematic parameter studies (Apr 2026): (1) tone/luminosity: underwater tint unifies color cast; (2) water color: balanced ocean blue-green BGR(180,120,30); (3) edge blending: edge_smoothing with 12px transition zone eliminates hard object borders.",
+      "icon": "Sparkles",
+      "is_default": true,
+      "config": {
+        "effects": [
+          "color_correction",
+          "blur_matching",
+          "underwater",
+          "caustics",
+          "shadows",
+          "edge_smoothing"
+        ],
+        "color_correction": {
+          "color_intensity": 0.25
+        },
+        "blur_matching": {
+          "blur_strength": 0.65
+        },
+        "underwater": {
+          "underwater_intensity": 0.33,
+          "water_color": [180, 120, 30]
+        },
+        "caustics": {
+          "caustics_intensity": 0.12,
+          "caustics_deterministic": true
+        },
+        "shadows": {
+          "shadow_opacity": 0.12,
+          "shadow_blur": 28
+        },
+        "edge_smoothing": {
+          "edge_feather": 12
+        },
+        "alpha_feather_radius": 2,
+        "use_binary_alpha": true
+      }
+    },
+    {
       "id": "clear_water",
       "name": "Clear Water",
       "description": "Crystal clear waters - debris is highly visible",
       "icon": "Waves",
       "config": {
-        "underwater": {"underwater_intensity": 0.12, "water_clarity": "clear"},
-        "caustics": {"caustics_intensity": 0.15}
+        "underwater": {
+          "underwater_intensity": 0.12,
+          "water_clarity": "clear"
+        },
+        "caustics": {
+          "caustics_intensity": 0.15
+        }
       }
     },
     {
@@ -236,8 +557,13 @@
       "description": "Low visibility conditions - debris partially obscured",
       "icon": "CloudFog",
       "config": {
-        "underwater": {"underwater_intensity": 0.25, "water_clarity": "murky"},
-        "caustics": {"caustics_intensity": 0.05}
+        "underwater": {
+          "underwater_intensity": 0.25,
+          "water_clarity": "murky"
+        },
+        "caustics": {
+          "caustics_intensity": 0.05
+        }
       }
     },
     {
@@ -246,9 +572,20 @@
       "description": "Deep water with strong blue tint - sunken debris on seafloor",
       "icon": "Anchor",
       "config": {
-        "underwater": {"underwater_intensity": 0.30, "water_color": [150, 100, 30]},
-        "caustics": {"enabled": false},
-        "lighting": {"lighting_intensity": 0.2}
+        "underwater": {
+          "underwater_intensity": 0.3,
+          "water_color": [
+            150,
+            100,
+            30
+          ]
+        },
+        "caustics": {
+          "enabled": false
+        },
+        "lighting": {
+          "lighting_intensity": 0.2
+        }
       }
     }
   ],
@@ -294,28 +631,49 @@
       "name": "Underwater Debris (CleanSea/OceanGarbage/NeuralOcean)",
       "description": "All underwater waste classes from the combined CleanSea, Ocean-Garbage, and Neural-Ocean datasets",
       "icon": "Trash2",
-      "classes": ["Bottle", "Can", "Fishing_Net", "Glove", "Mask", "Metal_Debris", "Plastic_Debris", "Tire"]
+      "classes": [
+        "Bottle",
+        "Can",
+        "Fishing_Net",
+        "Glove",
+        "Mask",
+        "Metal_Debris",
+        "Plastic_Debris",
+        "Tire"
+      ]
     },
     {
       "id": "plastic_waste",
       "name": "Plastic Waste",
       "description": "Plastic-related debris only (bottles, bags, generic plastic)",
       "icon": "Package",
-      "classes": ["Bottle", "Plastic_Debris", "Mask", "Glove"]
+      "classes": [
+        "Bottle",
+        "Plastic_Debris",
+        "Mask",
+        "Glove"
+      ]
     },
     {
       "id": "heavy_debris",
       "name": "Heavy Debris (Sinkable)",
       "description": "Heavy items that sink to the seafloor",
       "icon": "Anchor",
-      "classes": ["Can", "Metal_Debris", "Tire"]
+      "classes": [
+        "Can",
+        "Metal_Debris",
+        "Tire"
+      ]
     },
     {
       "id": "entanglement_hazards",
       "name": "Entanglement Hazards",
       "description": "Items that pose entanglement risks to marine life",
       "icon": "AlertTriangle",
-      "classes": ["Fishing_Net", "Plastic_Debris"]
+      "classes": [
+        "Fishing_Net",
+        "Plastic_Debris"
+      ]
     }
   ]
 }

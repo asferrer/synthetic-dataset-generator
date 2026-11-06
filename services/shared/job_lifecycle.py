@@ -7,7 +7,7 @@ Status transitions: queued -> running -> completed/failed/cancelled/interrupted
 
 import time
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 
 from .job_database import JobDatabase, get_job_db
 from .job_logger import JobLogger

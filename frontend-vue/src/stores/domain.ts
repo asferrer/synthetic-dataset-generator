@@ -623,6 +623,6 @@ export const useDomainStore = defineStore('domain', () => {
 }, {
   persist: {
     // Only persist the active domain ID, not the full data
-    pick: ['activeDomainId'],
+    paths: ['activeDomainId'],
   },
 })

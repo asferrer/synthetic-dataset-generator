@@ -526,7 +526,7 @@ onMounted(loadDomain)
                   </div>
                   <div class="flex justify-end">
                     <BaseButton
-                      variant="destructive"
+                      variant="danger"
                       size="sm"
                       @click="removeRegion(index)"
                       :disabled="editedDomain.regions.length <= 1"
@@ -624,7 +624,7 @@ onMounted(loadDomain)
                     </div>
                   </div>
                   <div class="flex justify-end">
-                    <BaseButton variant="destructive" size="sm" @click="removeObject(index)">
+                    <BaseButton variant="danger" size="sm" @click="removeObject(index)">
                       <Trash2 class="h-4 w-4" />
                       Remove
                     </BaseButton>

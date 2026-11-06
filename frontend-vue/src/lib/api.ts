@@ -19,12 +19,12 @@ import type {
   LabelingJob,
   LabelingResult,
   ExtractionRequest,
-  ExtractionResult,
+  ExtractionStartResponse,
+  ExtractionJobStatus,
   ExportRequest,
   ExportResult,
   SegmentationRequest,
   SegmentationResult,
-  ObjectSizeConfig,
   Domain,
   DomainSummary,
   DomainCreateRequest,
@@ -32,6 +32,7 @@ import type {
   CompatibilityCheckRequest,
   CompatibilityCheckResponse,
 } from '@/types/api'
+import type { COCODataset, COCOCategory } from '@/types/coco'
 
 // API Base URL - uses Gateway service
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
@@ -255,6 +256,39 @@ export async function analyzeDataset(path: string): Promise<DatasetAnalysis> {
   return response.data
 }
 
+// ============================================
+// GENERATED DATASET VIEWER (metadata + COCO)
+// ============================================
+
+export interface GeneratedDatasetMetadata {
+  job_id: string
+  dataset_name: string
+  dataset_type: string
+  coco_json_path: string
+  images_dir: string
+  effects_config_path?: string | null
+  num_images: number
+  num_annotations: number
+  num_categories: number
+  class_distribution: Record<string, number>
+  categories: COCOCategory[]
+  preview_images: string[]
+  generation_config?: Record<string, unknown> | null
+  file_size_mb: number
+}
+
+/** Get metadata (images_dir, counts, class distribution) for a completed generation job. */
+export async function getGeneratedDatasetMetadata(jobId: string): Promise<GeneratedDatasetMetadata> {
+  const response = await api.get(`/augment/datasets/${jobId}`)
+  return response.data
+}
+
+/** Load the full COCO JSON (images, annotations, categories) for a completed generation job. */
+export async function getGeneratedDatasetCoco(jobId: string): Promise<COCODataset> {
+  const response = await api.get(`/augment/datasets/${jobId}/coco`)
+  return response.data
+}
+
 export async function uploadDataset(file: File, name?: string): Promise<{ success: boolean; path: string }> {
   const formData = new FormData()
   formData.append('file', file)
@@ -275,6 +309,68 @@ export async function startGeneration(request: GenerationRequest): Promise<Gener
   return response.data
 }
 
+// ============================================
+// SINGLE COMPOSE (Effects Preview)
+// ============================================
+
+export interface ComposeObjectPlacement {
+  image_path: string
+  class_name: string
+  position?: [number, number]
+  scale?: number
+  rotation?: number
+  material?: string
+}
+
+export interface ComposeQualityScore {
+  perceptual_quality: number
+  distribution_match: number
+  anomaly_score: number
+  composition_score: number
+  overall_score: number
+  overall_pass: boolean
+}
+
+export interface ComposePhysicsViolation {
+  violation_type: string
+  object_class: string
+  severity: string
+  description: string
+  suggested_fix?: string | null
+}
+
+export interface ComposeSingleRequest {
+  background_path: string
+  objects: ComposeObjectPlacement[]
+  depth_map_path?: string | null
+  effects?: string[]
+  effects_config?: Record<string, unknown>
+  validate_quality?: boolean
+  validate_physics?: boolean
+  output_path: string
+  save_annotations?: boolean
+}
+
+export interface ComposeSingleResult {
+  success: boolean
+  output_path: string
+  objects_placed: number
+  depth_used: boolean
+  effects_applied: string[]
+  quality_score?: ComposeQualityScore | null
+  physics_violations: ComposePhysicsViolation[]
+  is_valid: boolean
+  rejection_reason?: string | null
+  processing_time_ms: number
+  error?: string | null
+}
+
+/** Compose a single preview image with the given background/object and flattened effects config. */
+export async function composeSingle(request: ComposeSingleRequest): Promise<ComposeSingleResult> {
+  const response = await api.post('/augment/compose', request)
+  return response.data
+}
+
 // ===========================================
 // EXPORT
 // ===========================================
@@ -288,79 +384,75 @@ export async function exportDataset(request: ExportRequest): Promise<ExportResul
 // COMBINE & SPLIT
 // ===========================================
 
+export interface CombineRequest {
+  datasets: string[]
+  output_path: string
+  merge_categories?: boolean
+  deduplicate?: boolean
+}
+
 export interface CombineResult {
   success: boolean
   output_path: string
   total_images: number
   total_annotations: number
-  categories: string[]
+  total_categories: number
 }
 
-export async function combineDatasets(
-  datasetPaths: string[],
-  outputDir: string,
-  mergeCategories = true,
-  deduplicate = false
-): Promise<CombineResult> {
-  const response = await api.post('/datasets/combine', {
-    dataset_paths: datasetPaths,
-    output_dir: outputDir,
-    merge_categories: mergeCategories,
-    deduplicate,
-  })
+export async function combineDatasets(request: CombineRequest): Promise<CombineResult> {
+  const response = await api.post('/datasets/combine', request)
   return response.data
+}
+
+export interface SplitRequest {
+  dataset_path: string
+  output_dir: string
+  train_ratio: number
+  val_ratio: number
+  test_ratio: number
+  stratified?: boolean
+  seed?: number
+}
+
+export interface SplitInfo {
+  path: string
+  images: number
+  annotations: number
 }
 
 export interface SplitResult {
   success: boolean
-  output_dir: string
-  train_count: number
-  val_count: number
-  test_count: number
+  splits: Partial<Record<'train' | 'val' | 'test', SplitInfo>>
 }
 
-export async function splitDataset(
-  datasetPath: string,
-  outputDir: string,
-  trainRatio: number,
-  valRatio: number,
-  testRatio: number,
-  stratified = true,
-  randomSeed?: number
-): Promise<SplitResult> {
-  const response = await api.post('/datasets/split', {
-    dataset_path: datasetPath,
-    output_dir: outputDir,
-    train_ratio: trainRatio,
-    val_ratio: valRatio,
-    test_ratio: testRatio,
-    stratified,
-    random_seed: randomSeed,
-  })
+export async function splitDataset(request: SplitRequest): Promise<SplitResult> {
+  const response = await api.post('/datasets/split', request)
   return response.data
+}
+
+export interface KFoldRequest {
+  dataset_path: string
+  output_dir: string
+  num_folds: number
+  val_fold?: number
+  stratified?: boolean
+  random_seed?: number
 }
 
 export interface KFoldResult {
   success: boolean
-  output_dir: string
   num_folds: number
-  fold_counts: number[]
+  val_fold: number
+  output_dir: string
+  folds: SplitInfo[]
+  train_path: string
+  val_path: string
+  train_images: number
+  val_images: number
 }
 
-export async function kFoldSplit(
-  datasetPath: string,
-  outputDir: string,
-  numFolds: number,
-  stratified = true,
-  randomSeed?: number
-): Promise<KFoldResult> {
-  const response = await api.post('/datasets/kfold', {
-    dataset_path: datasetPath,
-    output_dir: outputDir,
-    num_folds: numFolds,
-    stratified,
-    random_seed: randomSeed,
-  })
+export async function kFoldSplit(request: KFoldRequest): Promise<KFoldResult> {
+  const response = await api.post('/datasets/kfold', request)
   return response.data
 }
 
@@ -515,12 +607,12 @@ export async function getLabelingPreviews(jobId: string, limit = 10): Promise<La
 // EXTRACTION (Segmentation Service)
 // ===========================================
 
-export async function startExtraction(request: ExtractionRequest): Promise<ExtractionResult> {
+export async function startExtraction(request: ExtractionRequest): Promise<ExtractionStartResponse> {
   const response = await segmentationApi.post('/extract/objects', request)
   return response.data
 }
 
-export async function getExtractionStatus(jobId: string): Promise<ExtractionResult> {
+export async function getExtractionStatus(jobId: string): Promise<ExtractionJobStatus> {
   const response = await segmentationApi.get(`/extract/jobs/${jobId}`)
   return response.data
 }
@@ -553,13 +645,13 @@ export async function cancelSam3Job(jobId: string): Promise<{ success: boolean; 
 // OBJECT SIZES
 // ===========================================
 
-export async function getObjectSizes(): Promise<ObjectSizeConfig[]> {
+export async function getObjectSizes(): Promise<Record<string, number>> {
   const response = await api.get('/config/object-sizes')
-  return response.data.sizes || []
+  return response.data.sizes || {}
 }
 
 export async function updateObjectSize(className: string, size: number): Promise<{ success: boolean }> {
-  const response = await api.put(`/config/object-sizes/${encodeURIComponent(className)}`, { size })
+  const response = await api.put(`/config/object-sizes/${encodeURIComponent(className)}`, null, { params: { size } })
   return response.data
 }
 
@@ -569,7 +661,7 @@ export async function deleteObjectSize(className: string): Promise<{ success: bo
 }
 
 export async function updateMultipleObjectSizes(sizes: Record<string, number>): Promise<{ success: boolean; updated_count: number }> {
-  const response = await api.post('/config/object-sizes/batch', { sizes })
+  const response = await api.post('/config/object-sizes/batch', sizes)
   return response.data
 }
 
@@ -691,18 +783,7 @@ export async function getDomainLabelingTemplates(domainId: string): Promise<{ do
 // DOMAIN OVERRIDES (Built-in Domain Customization)
 // ===========================================
 
-export interface BuiltinOverrideRequest {
-  regions?: Domain['regions']
-  objects?: Domain['objects']
-  compatibility_matrix?: Domain['compatibility_matrix']
-  effects?: Domain['effects']
-  physics?: Domain['physics']
-  presets?: Domain['presets']
-  labeling_templates?: Domain['labeling_templates']
-  name?: string
-  description?: string
-  icon?: string
-}
+export type BuiltinOverrideRequest = Omit<DomainUpdateRequest, 'version'>
 
 export interface BuiltinOverrideResponse {
   success: boolean
@@ -760,13 +841,12 @@ export async function updateDomainSam3Prompts(
   domainId: string,
   regionPrompts: Array<{ id: string; sam3_prompt: string | null }>
 ): Promise<BuiltinOverrideResponse> {
-  // Convert to the full region update format
-  const regions = regionPrompts.map(rp => ({
-    id: rp.id,
-    name: rp.id,
-    display_name: rp.id,
-    sam3_prompt: rp.sam3_prompt,
-  }))
+  // El backend sustituye los campos de cada región, así que se parte de la región completa
+  const domain = await getDomain(domainId)
+  const regions = domain.regions.map(r => {
+    const update = regionPrompts.find(rp => rp.id === r.id)
+    return update ? { ...r, sam3_prompt: update.sam3_prompt } : r
+  })
 
   return createBuiltinOverride(domainId, { regions })
 }

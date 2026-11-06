@@ -2,7 +2,7 @@
 HTTP Client for Service Communication
 
 Provides async HTTP client with retry logic for communicating with
-microservices (Depth, Effects, Segmentation).
+microservices (Depth, Segmentation, Augmentor, Domain Gap).
 """
 import os
 import logging
@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 # Configurable timeouts from environment variables
 DEFAULT_TIMEOUT = float(os.environ.get("SERVICE_TIMEOUT", "60"))
 DEPTH_TIMEOUT = float(os.environ.get("DEPTH_SERVICE_TIMEOUT", "90"))
-EFFECTS_TIMEOUT = float(os.environ.get("EFFECTS_SERVICE_TIMEOUT", "60"))
 SEGMENTATION_TIMEOUT = float(os.environ.get("SEGMENTATION_SERVICE_TIMEOUT", "120"))
 AUGMENTOR_TIMEOUT = float(os.environ.get("AUGMENTOR_SERVICE_TIMEOUT", "180"))
 DOMAIN_GAP_TIMEOUT = float(os.environ.get("DOMAIN_GAP_SERVICE_TIMEOUT", "120"))
@@ -183,11 +182,6 @@ class ServiceRegistry:
             timeout=DEPTH_TIMEOUT,
             service_name="depth"
         )
-        self.effects = ServiceClient(
-            base_url=os.environ.get("EFFECTS_SERVICE_URL", "http://effects:8003"),
-            timeout=EFFECTS_TIMEOUT,
-            service_name="effects"
-        )
         self.segmentation = ServiceClient(
             base_url=os.environ.get("SEGMENTATION_SERVICE_URL", "http://segmentation:8002"),
             timeout=SEGMENTATION_TIMEOUT,
@@ -214,7 +208,6 @@ class ServiceRegistry:
 
         results = await asyncio.gather(
             self.depth.health_check(),
-            self.effects.health_check(),
             self.segmentation.health_check(),
             self.augmentor.health_check(),
             self.domain_gap.health_check(),
@@ -223,10 +216,9 @@ class ServiceRegistry:
 
         return {
             "depth": results[0] if not isinstance(results[0], Exception) else {"healthy": False, "error": str(results[0])},
-            "effects": results[1] if not isinstance(results[1], Exception) else {"healthy": False, "error": str(results[1])},
-            "segmentation": results[2] if not isinstance(results[2], Exception) else {"healthy": False, "error": str(results[2])},
-            "augmentor": results[3] if not isinstance(results[3], Exception) else {"healthy": False, "error": str(results[3])},
-            "domain_gap": results[4] if not isinstance(results[4], Exception) else {"healthy": False, "error": str(results[4])}
+            "segmentation": results[1] if not isinstance(results[1], Exception) else {"healthy": False, "error": str(results[1])},
+            "augmentor": results[2] if not isinstance(results[2], Exception) else {"healthy": False, "error": str(results[2])},
+            "domain_gap": results[3] if not isinstance(results[3], Exception) else {"healthy": False, "error": str(results[3])}
         }
 
 

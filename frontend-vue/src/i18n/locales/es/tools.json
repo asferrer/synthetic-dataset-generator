@@ -48,7 +48,6 @@
       "gateway": "Gateway",
       "depth": "Servicio de Profundidad",
       "segmentation": "Servicio de Segmentación",
-      "effects": "Servicio de Efectos",
       "augmentor": "Servicio de Aumentación"
     },
     "status": {
@@ -65,7 +64,7 @@
   },
   "objectExtraction": {
     "title": "Extracción de Objetos",
-    "subtitle": "Extrae objetos de imágenes usando segmentación",
+    "subtitle": "Extrae objetos individuales de un dataset para usarlos en la generación sintética.",
     "inputImage": "Imagen de Entrada",
     "inputImagePath": "Ruta de Imagen",
     "outputDirectory": "Directorio de Salida",
@@ -80,14 +79,36 @@
       "padding": "Relleno",
       "saveOriginal": "Guardar Recorte Original"
     },
+    "sourceDatasetTitle": "Dataset de Origen",
+    "cocoJsonPath": "Ruta del JSON COCO",
+    "imagesDirectory": "Directorio de Imágenes",
+    "outputSettingsTitle": "Configuración de Salida",
+    "minObjectSize": "Tamaño Mínimo de Objeto",
+    "includeMasks": "Incluir máscaras de segmentación",
+    "includeMasksDesc": "Extrae máscaras junto con los recortes de objetos",
+    "advancedOptionsTitle": "Opciones Avanzadas",
+    "useSam3": "Usar SAM3 para máscaras",
+    "useSam3Desc": "Genera máscaras de segmentación precisas usando Segment Anything Model 3. Más preciso pero más lento.",
+    "deduplicate": "Eliminar duplicados",
+    "deduplicateDesc": "Omite objetos visualmente similares a los ya extraídos.",
+    "paddingLabel": "Relleno alrededor de los objetos",
+    "paddingDesc": "Píxeles extra a incluir alrededor de cada bounding box. Ayuda con artefactos de borde.",
+    "progressTitle": "Progreso de Extracción",
+    "extracting": "Extrayendo...",
+    "jobIdLabel": "ID del Trabajo: {id}",
+    "missingInput": "Entrada Faltante",
+    "missingInputMsg": "Por favor especifica la ruta del JSON COCO y el directorio de imágenes",
+    "extractionFailedMsg": "Error al iniciar la extracción",
     "actions": {
       "extract": "Extraer Objetos",
-      "extractAll": "Extraer Todos"
+      "extractAll": "Extraer Todos",
+      "startExtraction": "Iniciar Extracción"
     },
     "notifications": {
       "started": "Extracción Iniciada",
+      "startedMsg": "Trabajo {id} iniciado",
       "completed": "Extracción Completa",
-      "completedMsg": "Se extrajeron {count} objetos",
+      "completedMsg": "Objetos extraídos exitosamente",
       "failed": "Extracción Fallida"
     }
   },
@@ -391,6 +412,11 @@
       "skip": "Omitir",
       "issuesDetected": "problemas detectados",
       "parameterSuggestions": "sugerencias de parámetros",
+      "recommendation": {
+        "low": "El domain gap es bajo. Tus datos sintéticos deberían funcionar bien para el entrenamiento.",
+        "medium": "Se detectó un domain gap moderado. Considera aplicar las sugerencias para mejorar la calidad.",
+        "high": "Se detectó un domain gap alto. Se recomienda ajustar los parámetros y regenerar antes de continuar."
+      },
       "progress": {
         "phases": {
           "pending": "Iniciando análisis...",

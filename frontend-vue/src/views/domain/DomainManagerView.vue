@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useDomainStore } from '@/stores/domain'
 import { useUiStore } from '@/stores/ui'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -36,6 +37,7 @@ import type { DomainSummary, Domain } from '@/types/api'
 const router = useRouter()
 const domainStore = useDomainStore()
 const uiStore = useUiStore()
+const { t } = useI18n()
 
 const showCreateModal = ref(false)
 const showImportModal = ref(false)
@@ -72,7 +74,7 @@ const newDomain = ref({
 
 async function handleCreateDomain() {
   if (!newDomain.value.domain_id || !newDomain.value.name) {
-    uiStore.showError('Error', 'Domain ID and name are required')
+    uiStore.showError(t('domain.manager.notifications.failed'), t('domain.manager.errors.idNameRequired'))
     return
   }
 
@@ -95,7 +97,7 @@ async function handleCreateDomain() {
   })
 
   if (domain) {
-    uiStore.showSuccess('Domain Created', `${domain.name} has been created`)
+    uiStore.showSuccess(t('domain.manager.notifications.created'), t('domain.manager.notifications.createdMsg', { name: domain.name }))
     showCreateModal.value = false
     newDomain.value = { domain_id: '', name: '', description: '', icon: 'Box' }
     router.push(`/domains/${domain.domain_id}/edit`)
@@ -105,7 +107,7 @@ async function handleCreateDomain() {
 async function handleActivateDomain(domainId: string) {
   const success = await domainStore.setActiveDomain(domainId)
   if (success) {
-    uiStore.showSuccess('Domain Activated', `${domainId} is now active`)
+    uiStore.showSuccess(t('domain.manager.notifications.activated'), t('domain.manager.notifications.activatedMsg', { name: domainId }))
   }
 }
 
@@ -114,7 +116,7 @@ async function handleDeleteDomain() {
 
   const success = await domainStore.deleteDomain(domainToDelete.value.domain_id)
   if (success) {
-    uiStore.showSuccess('Domain Deleted', `${domainToDelete.value.name} has been deleted`)
+    uiStore.showSuccess(t('domain.manager.notifications.deleted'), t('domain.manager.notifications.deletedMsg', { name: domainToDelete.value.name }))
   }
   showDeleteConfirm.value = false
   domainToDelete.value = null
@@ -130,7 +132,7 @@ async function handleExportDomain(domainId: string) {
     a.download = `${domainId}.json`
     a.click()
     URL.revokeObjectURL(url)
-    uiStore.showSuccess('Exported', `${domainId}.json downloaded`)
+    uiStore.showSuccess(t('domain.manager.notifications.exported'), t('domain.manager.notifications.exportedMsg', { name: domainId }))
   }
 }
 
@@ -140,12 +142,12 @@ async function handleImportDomain() {
     const domainData = JSON.parse(importJsonText.value) as Domain
     const domain = await domainStore.importDomain(domainData)
     if (domain) {
-      uiStore.showSuccess('Domain Imported', `${domain.name} has been imported`)
+      uiStore.showSuccess(t('domain.manager.notifications.imported'), t('domain.manager.notifications.importedMsg', { name: domain.name }))
       showImportModal.value = false
       importJsonText.value = ''
     }
   } catch (e: any) {
-    importError.value = e.message || 'Invalid JSON format'
+    importError.value = e.message || t('domain.manager.errors.invalidJson')
   }
 }
 
@@ -177,26 +179,26 @@ onMounted(() => {
     <!-- Header -->
     <div class="flex items-start justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-white">Domain Manager</h1>
+        <h1 class="text-2xl font-bold text-white">{{ t('domain.manager.title') }}</h1>
         <p class="mt-1 text-gray-400">
-          Configure and manage domain configurations for different synthetic dataset types.
+          {{ t('domain.manager.subtitle') }}
         </p>
       </div>
       <div class="flex gap-2">
         <BaseButton variant="outline" @click="showImportModal = true">
           <Upload class="h-4 w-4" />
-          Import
+          {{ t('domain.manager.importDomain') }}
         </BaseButton>
         <BaseButton @click="showCreateModal = true">
           <Plus class="h-4 w-4" />
-          New Domain
+          {{ t('domain.manager.createDomain') }}
         </BaseButton>
       </div>
     </div>
 
     <!-- Loading -->
     <div v-if="domainStore.isLoading" class="flex justify-center py-12">
-      <LoadingSpinner size="lg" message="Loading domains..." />
+      <LoadingSpinner size="lg" :message="t('common.status.loading')" />
     </div>
 
     <!-- Error -->
@@ -218,7 +220,7 @@ onMounted(() => {
               <component :is="getIconComponent(domainStore.activeDomain.icon)" class="h-6 w-6 text-primary" />
             </div>
             <div>
-              <p class="text-sm text-gray-400">Active Domain</p>
+              <p class="text-sm text-gray-400">{{ t('domain.manager.activeDomainLabel') }}</p>
               <p class="font-semibold text-white">{{ domainStore.activeDomain.name }}</p>
             </div>
           </div>
@@ -228,14 +230,14 @@ onMounted(() => {
             @click="router.push(`/domains/${domainStore.activeDomainId}/edit`)"
           >
             <Settings class="h-4 w-4" />
-            Configure
+            {{ t('domain.manager.configure') }}
           </BaseButton>
         </div>
       </div>
 
       <!-- Built-in Domains -->
       <div>
-        <h2 class="text-lg font-semibold text-white mb-4">Built-in Domains</h2>
+        <h2 class="text-lg font-semibold text-white mb-4">{{ t('domain.manager.builtInTitle') }}</h2>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div
             v-for="domain in domainStore.builtinDomains"
@@ -262,11 +264,11 @@ onMounted(() => {
             <div class="flex items-center gap-4 text-xs text-gray-500">
               <span class="flex items-center gap-1">
                 <MapPin class="h-3.5 w-3.5" />
-                {{ domain.region_count }} regions
+                {{ t('domain.manager.regionsCount', { count: domain.region_count }) }}
               </span>
               <span class="flex items-center gap-1">
                 <Package class="h-3.5 w-3.5" />
-                {{ domain.object_count }} objects
+                {{ t('domain.manager.objectsCount', { count: domain.object_count }) }}
               </span>
             </div>
             <div class="flex gap-2 mt-4 pt-4 border-t border-gray-700">
@@ -275,7 +277,7 @@ onMounted(() => {
                 size="sm"
                 @click.stop="router.push(`/domains/${domain.domain_id}`)"
               >
-                View
+                {{ t('domain.manager.view') }}
               </BaseButton>
               <BaseButton
                 variant="ghost"
@@ -291,17 +293,17 @@ onMounted(() => {
 
       <!-- User Domains -->
       <div>
-        <h2 class="text-lg font-semibold text-white mb-4">Custom Domains</h2>
+        <h2 class="text-lg font-semibold text-white mb-4">{{ t('domain.manager.customTitle') }}</h2>
         <div v-if="domainStore.userDomains.length === 0" class="card p-8">
           <EmptyState
             :icon="Globe"
-            title="No custom domains yet"
-            description="Create a new domain or import one to get started."
+            :title="t('domain.manager.noDomains')"
+            :description="t('domain.manager.createModal.title')"
           >
             <template #actions>
               <BaseButton @click="showCreateModal = true">
                 <Plus class="h-4 w-4" />
-                Create Domain
+                {{ t('domain.manager.createDomain') }}
               </BaseButton>
             </template>
           </EmptyState>
@@ -327,7 +329,7 @@ onMounted(() => {
                   v-if="domainStore.activeDomainId === domain.domain_id"
                   class="h-5 w-5 text-primary"
                 />
-                <span class="badge badge-info text-xs">Custom</span>
+                <span class="badge badge-info text-xs">{{ t('domain.manager.custom') }}</span>
               </div>
             </div>
             <h3 class="font-semibold text-white mb-1">{{ domain.name }}</h3>
@@ -335,11 +337,11 @@ onMounted(() => {
             <div class="flex items-center gap-4 text-xs text-gray-500">
               <span class="flex items-center gap-1">
                 <MapPin class="h-3.5 w-3.5" />
-                {{ domain.region_count }} regions
+                {{ t('domain.manager.regionsCount', { count: domain.region_count }) }}
               </span>
               <span class="flex items-center gap-1">
                 <Package class="h-3.5 w-3.5" />
-                {{ domain.object_count }} objects
+                {{ t('domain.manager.objectsCount', { count: domain.object_count }) }}
               </span>
             </div>
             <div class="flex gap-2 mt-4 pt-4 border-t border-gray-700">
@@ -349,7 +351,7 @@ onMounted(() => {
                 @click.stop="router.push(`/domains/${domain.domain_id}/edit`)"
               >
                 <Edit class="h-4 w-4" />
-                Edit
+                {{ t('domain.manager.actions.edit') }}
               </BaseButton>
               <BaseButton
                 variant="ghost"
@@ -380,43 +382,43 @@ onMounted(() => {
         @click.self="showCreateModal = false"
       >
         <div class="card p-6 w-full max-w-md mx-4">
-          <h2 class="text-xl font-semibold text-white mb-4">Create New Domain</h2>
+          <h2 class="text-xl font-semibold text-white mb-4">{{ t('domain.manager.createModal.title') }}</h2>
 
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Domain ID</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ t('domain.manager.createModal.domainId') }}</label>
               <input
                 v-model="newDomain.domain_id"
                 type="text"
                 class="input w-full"
-                placeholder="e.g., my_custom_domain"
+                :placeholder="t('domain.manager.createModal.domainIdPlaceholder')"
                 pattern="^[a-z][a-z0-9_]*$"
               />
-              <p class="text-xs text-gray-500 mt-1">Lowercase letters, numbers, and underscores only</p>
+              <p class="text-xs text-gray-500 mt-1">{{ t('domain.manager.createModal.domainIdHint') }}</p>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Name</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ t('domain.manager.createModal.name') }}</label>
               <input
                 v-model="newDomain.name"
                 type="text"
                 class="input w-full"
-                placeholder="e.g., My Custom Domain"
+                :placeholder="t('domain.manager.createModal.namePlaceholder')"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ t('domain.manager.createModal.description') }}</label>
               <textarea
                 v-model="newDomain.description"
                 class="input w-full"
                 rows="2"
-                placeholder="Describe your domain..."
+                :placeholder="t('domain.manager.createModal.descriptionPlaceholder')"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Icon</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">{{ t('domain.manager.createModal.icon') }}</label>
               <div class="flex flex-wrap gap-2">
                 <button
                   v-for="icon in iconOptions"
@@ -437,9 +439,9 @@ onMounted(() => {
           </div>
 
           <div class="flex justify-end gap-3 mt-6">
-            <BaseButton variant="outline" @click="showCreateModal = false">Cancel</BaseButton>
+            <BaseButton variant="outline" @click="showCreateModal = false">{{ t('domain.manager.createModal.cancel') }}</BaseButton>
             <BaseButton @click="handleCreateDomain" :loading="domainStore.isLoading">
-              Create Domain
+              {{ t('domain.manager.createModal.create') }}
             </BaseButton>
           </div>
         </div>
@@ -454,25 +456,25 @@ onMounted(() => {
         @click.self="showImportModal = false"
       >
         <div class="card p-6 w-full max-w-2xl mx-4">
-          <h2 class="text-xl font-semibold text-white mb-4">Import Domain</h2>
+          <h2 class="text-xl font-semibold text-white mb-4">{{ t('domain.manager.importModal.title') }}</h2>
 
           <AlertBox v-if="importError" type="error" :title="importError" class="mb-4" />
 
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Domain JSON</label>
+            <label class="block text-sm font-medium text-gray-300 mb-1">{{ t('domain.manager.importModal.jsonLabel') }}</label>
             <textarea
               v-model="importJsonText"
               class="input w-full font-mono text-sm"
               rows="12"
-              placeholder="Paste your domain JSON here..."
+              :placeholder="t('domain.manager.importModal.jsonPlaceholder')"
             />
           </div>
 
           <div class="flex justify-end gap-3 mt-6">
-            <BaseButton variant="outline" @click="showImportModal = false">Cancel</BaseButton>
+            <BaseButton variant="outline" @click="showImportModal = false">{{ t('domain.manager.importModal.cancel') }}</BaseButton>
             <BaseButton @click="handleImportDomain" :loading="domainStore.isLoading">
               <Upload class="h-4 w-4" />
-              Import
+              {{ t('domain.manager.importModal.import') }}
             </BaseButton>
           </div>
         </div>
@@ -487,21 +489,20 @@ onMounted(() => {
         @click.self="showDeleteConfirm = false"
       >
         <div class="card p-6 w-full max-w-md mx-4">
-          <h2 class="text-xl font-semibold text-white mb-2">Delete Domain</h2>
+          <h2 class="text-xl font-semibold text-white mb-2">{{ t('domain.manager.deleteModal.title') }}</h2>
           <p class="text-gray-400 mb-6">
-            Are you sure you want to delete <strong class="text-white">{{ domainToDelete?.name }}</strong>?
-            This action cannot be undone.
+            {{ t('domain.manager.confirmDelete', { name: domainToDelete?.name }) }}
           </p>
 
           <div class="flex justify-end gap-3">
-            <BaseButton variant="outline" @click="showDeleteConfirm = false">Cancel</BaseButton>
+            <BaseButton variant="outline" @click="showDeleteConfirm = false">{{ t('domain.manager.deleteModal.cancel') }}</BaseButton>
             <BaseButton
-              variant="destructive"
+              variant="danger"
               @click="handleDeleteDomain"
               :loading="domainStore.isLoading"
             >
               <Trash2 class="h-4 w-4" />
-              Delete
+              {{ t('domain.manager.deleteModal.delete') }}
             </BaseButton>
           </div>
         </div>
