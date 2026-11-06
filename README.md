@@ -9,6 +9,12 @@ The generator was developed for the marine debris detection work of the Oceangua
 synthetic batch used in the thesis experiments. The configuration of that batch is documented in
 [`docs/SYNTHESIS_PROFILE.md`](docs/SYNTHESIS_PROFILE.md).
 
+![From a background and object crops to an annotated image](assets/tool1.png)
+
+The copy-paste configuration used for underwater debris detection follows these stages:
+
+![Copy-paste pipeline](docs/images/pipeline.png)
+
 ## Features
 
 - Depth-aware composition: object scale, blur and occlusion follow a monocular depth map (Depth Anything 3).
