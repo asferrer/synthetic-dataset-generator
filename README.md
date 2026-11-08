@@ -31,16 +31,25 @@ The copy-paste configuration used for underwater debris detection follows these 
 
 ## Architecture
 
+```mermaid
+flowchart TD
+    UI["Frontend (Vue 3 + nginx)<br/>host :3001"] -->|"/api/*"| GW["Gateway (FastAPI)<br/>:8000"]
+    UI -->|"/segmentation/*"| SEG
+    GW --> AUG["Augmentor<br/>:8004 (GPU)"]
+    GW --> DG["Domain Gap<br/>:8005 (GPU)"]
+    GW --> SEG["Segmentation<br/>:8002 (GPU)"]
+    GW --> DEP["Depth<br/>:8001 (GPU)"]
+    AUG -->|"depth map"| DEP
+    AUG -->|"scene analysis"| SEG
+    DB[("Shared job database<br/>SQLite, /shared/db")]
+    GW -.-> DB
+    AUG -.-> DB
+    DG -.-> DB
 ```
-                 Frontend (Vue 3, :3001)
-                          |
-                  Gateway (FastAPI, :8000)
-                          |
-      +---------+---------+----------+-------------+
-      |         |         |          |             |
-    Depth   Segmentation  Augmentor  Domain Gap   (shared job
-    :8001      :8002       :8004      :8005        database)
-```
+
+The gateway is the single entry point of the web interface. The augmentor calls the depth and segmentation services
+directly, and the gateway, augmentor and domain-gap services share a SQLite job database so that interrupted jobs
+can be resumed.
 
 | Service | Port | GPU | Role |
 |---|---|---|---|
@@ -91,11 +100,41 @@ curl -X POST http://localhost:8004/compose-batch -H "Content-Type: application/j
 
 Endpoint reference: the OpenAPI documentation of each service at `http://localhost:<port>/docs`.
 
+Flow of a batch job in the augmentor (details in [`ARCHITECTURE.md`](ARCHITECTURE.md), section 2):
+
+```mermaid
+flowchart LR
+    REQ["POST /compose-batch<br/>effects, per-class targets,<br/>synth_profile"] --> PLAN["Pick background<br/>and objects"]
+    PLAN --> SCENE["Depth map and<br/>region map"]
+    SCENE --> PLACE["Placement<br/>and scaling"]
+    PLACE --> FX["Shadows and<br/>realism effects"]
+    FX --> VAL{"Validation<br/>(LPIPS, physics)"}
+    VAL -->|"pass"| OUT["Image + COCO<br/>annotations"]
+    VAL -->|"fail and reject_invalid"| PLAN
+    OUT --> CK[("Job checkpoint")]
+```
+
 ### Domains
 
 Domains are defined in `config/domains/` (`underwater.json`, `fire_smoke.json`, `aerial_birds.json`; start from
 `_template.json` for a new one) and validated against `domain_schema.json`. A domain sets regions, object classes,
 physics, effects, presets and domain-gap profiles.
+
+## How batches are selected
+
+The article chooses the configuration of the batch with a panel of frozen evaluators (object-level grouped AUC, KID,
+CMMD, coverage, recall and Vendi score) as a filter and a short transfer check on a detector as the final arbiter.
+
+![Batch selection procedure](docs/images/batch-selection.png)
+
+*Figure from the accompanying article.*
+
+The figure below plots, for each evaluator of the panel, the validation AP of the training arms against the AUC of
+their synthetic batch (lower AUC means closer to real).
+
+![AP against the AUC of each evaluator](docs/images/ap-vs-gap.png)
+
+*Figure from the accompanying article.*
 
 ## Reproducing the synthetic batch of the thesis
 
